@@ -1,0 +1,168 @@
+:root {
+  --primary-color: #5EC492;
+  --secondary-color: #81D4A6;
+  --accent-color: #3BA776;
+  --bg-primary: #0f0f1e;
+  --bg-secondary: #1a1a2e;
+  --bg-card: #252538;
+  --text-primary: #e4e4e7;
+  --text-secondary: #a1a1aa;
+  --border-color: #3f3f46;
+  --shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+  --shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.5);
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background: linear-gradient(135deg, #0f0f1e 0%, #1a1a2e 100%);
+  min-height: 100vh;
+  color: var(--text-primary);
+}
+
+.app {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.main-content {
+  flex: 1;
+  padding: 0;
+  max-width: none;
+  margin: 0;
+  width: 100%;
+}
+
+/* Add padding back for other pages (with fallback for older browsers) */
+.main-content.with-padding {
+  padding: 20px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* Modern browsers */
+@supports (selector(:has(*))) {
+  .main-content:not(:has(.home2-container)) {
+    padding: 20px;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+}
+
+/* Utility Classes */
+.btn {
+  padding: 12px 30px;
+  border: none;
+  border-radius: 25px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.btn-primary {
+  background: var(--primary-color);
+  color: var(--white);
+  box-shadow: var(--shadow);
+}
+
+.btn-primary:hover {
+  background: #3BA776;
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+}
+
+.btn-secondary {
+  background: var(--bg-secondary);
+  color: var(--primary-color);
+  border: 2px solid var(--primary-color);
+}
+
+.btn-secondary:hover {
+  background: var(--primary-color);
+  color: var(--white);
+}
+
+.card {
+  background: var(--bg-card);
+  border-radius: 20px;
+  padding: 40px;
+  box-shadow: var(--shadow-lg);
+  animation: fadeIn 0.5s ease;
+  border: 1px solid var(--border-color);
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .main-content {
+    padding: 10px;
+  }
+  
+  .card {
+    padding: 20px;
+  }
+}
+
+/* 
+  Browser Theme Sync - Uncomment this section to enable automatic theme switching based on browser/system preference
+  
+@media (prefers-color-scheme: light) {
+  :root {
+    --bg-primary: #f8f9fa;
+    --bg-secondary: #ffffff;
+    --bg-card: #ffffff;
+    --text-primary: #2d3436;
+    --text-secondary: #636e72;
+    --border-color: #e9ecef;
+    --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    --shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.15);
+  }
+  
+  body {
+    background: linear-gradient(135deg, #A8E6CF 0%, #5EC492 100%);
+  }
+  
+  .navbar {
+    background: rgba(255, 255, 255, 0.98);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    border-bottom: 1px solid #e9ecef;
+  }
+  
+  .question-card.unanswered {
+    border-color: #dc3545;
+    background: #fff5f5;
+  }
+  
+  .validation-warning {
+    background: #fff3cd;
+    color: #856404;
+  }
+  
+  .info-box {
+    background: #fff3cd;
+  }
+  
+  .info-box p {
+    color: #2d3436;
+  }
+}
+*/
