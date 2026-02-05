@@ -75,13 +75,13 @@ body {
 
 .btn-primary {
   background: var(--text-primary);
-  color: #2C2C2C;
+  color: white;
   box-shadow: var(--shadow);
 }
 
 .btn-primary:hover {
   background: var(--text-secondary);
-  color: #2C2C2C;
+  color: white;
   transform: translateY(-2px);
   box-shadow: var(--shadow-lg);
 }

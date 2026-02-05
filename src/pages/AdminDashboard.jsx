@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { FaUsers, FaChartBar, FaQuestionCircle, FaCog, FaSignOutAlt, FaPlus, FaTrash, FaEdit, FaHistory, FaCalculator, FaChevronDown } from 'react-icons/fa';
+import { FaUsers, FaChartBar, FaQuestionCircle, FaCog, FaSignOutAlt, FaPlus, FaTrash, FaEdit, FaHistory, FaCalculator, FaChevronDown, FaArrowLeft } from 'react-icons/fa';
 import './AdminDashboard.css';
 
 function AdminDashboard({ onLogout }) {
@@ -106,6 +106,7 @@ function AdminDashboard({ onLogout }) {
   const [newQuestion, setNewQuestion] = useState({ domainId: 'stress', text: '', weight: 1 });
   const [newDomain, setNewDomain] = useState({ name: '', color: '#3498db' });
   const [showAddDomain, setShowAddDomain] = useState(false);
+  const [selectedDomain, setSelectedDomain] = useState(null); // For navigating to domain detail view
   const [expandedQuestion, setExpandedQuestion] = useState(null);
   const [questionOptions, setQuestionOptions] = useState({
     // Default options for scale-based questions
@@ -201,6 +202,12 @@ function AdminDashboard({ onLogout }) {
       scores: { anxiety: 77, burnout: 70, sleep: 65 }
     }
   ]);
+
+  // Test history sorting and filtering state
+  const [sortBy, setSortBy] = useState('date'); // 'date', 'userId', 'avgScore'
+  const [sortOrder, setSortOrder] = useState('desc'); // 'asc', 'desc'
+  const [filterDomain, setFilterDomain] = useState('all');
+  const [filterStatus, setFilterStatus] = useState('all'); // 'all', 'low', 'mild', 'moderate', 'high'
 
   // Mock data for testing statistics
   const mockStats = {
@@ -386,7 +393,7 @@ function AdminDashboard({ onLogout }) {
         </div>
 
         <div className="stat-card">
-          <div className="stat-icon" style={{ background: '#FF8F8F' }}>
+          <div className="stat-icon" style={{ background: '#4A9B8E' }}>
             <FaChartBar />
           </div>
           <div className="stat-content">
@@ -419,54 +426,52 @@ function AdminDashboard({ onLogout }) {
     </div>
   );
 
-  const renderQuestions = () => (
-    <div className="questions-section">
-      <h2 className="section-title">Domain & Question Management</h2>
-      
-      <div className="add-domain-container">
-        {showAddDomain ? (
-          <div className="add-domain-form">
-            <input
-              type="text"
-              value={newDomain.name}
-              onChange={(e) => setNewDomain({ ...newDomain, name: e.target.value })}
-              placeholder="Domain name (e.g., Resilience)"
-              className="domain-input"
-            />
-            <input
-              type="color"
-              value={newDomain.color}
-              onChange={(e) => setNewDomain({ ...newDomain, color: e.target.value })}
-              className="color-input"
-              title="Choose domain color"
-            />
-            <button className="btn-save" onClick={handleAddDomain}>Add Domain</button>
-            <button className="btn-cancel" onClick={() => setShowAddDomain(false)}>Cancel</button>
-          </div>
-        ) : (
-          <button className="btn btn-primary" onClick={() => setShowAddDomain(true)}>
-            <FaPlus /> Add New Domain
-          </button>
-        )}
-      </div>
+  const renderQuestions = () => {
+    // If a domain is selected, show the domain detail view
+    if (selectedDomain) {
+      const domain = domains.find(d => d.id === selectedDomain);
+      if (!domain) {
+        setSelectedDomain(null);
+        return null;
+      }
 
-      {domains.map((domain) => (
-        <div key={domain.id} className="question-group">
-          <div className="domain-header">
-            <h3 className="question-group-title" style={{ borderLeftColor: domain.color }}>
+      return (
+        <div className="domain-detail-view">
+          <div className="domain-detail-header">
+            <button className="btn-back" onClick={() => {
+              setSelectedDomain(null);
+              setEditingQuestion(null);
+              setExpandedQuestion(null);
+            }}>
+              <FaArrowLeft /> Back to Domains
+            </button>
+            <h2 className="domain-detail-title" style={{ borderLeftColor: domain.color }}>
               <span className="domain-color-badge" style={{ backgroundColor: domain.color }}></span>
-              {domain.name} ({domain.questions.length} questions)
-              <span className="domain-max-score">Max Score: {calculateMaxScore(domain)}</span>
-            </h3>
+              {domain.name}
+            </h2>
             <button 
               className="btn-delete-domain" 
-              onClick={() => handleDeleteDomain(domain.id)}
+              onClick={() => {
+                if (window.confirm(`Delete entire ${domain.name} domain and all its questions?`)) {
+                  handleDeleteDomain(domain.id);
+                  setSelectedDomain(null);
+                }
+              }}
               title="Delete entire domain"
             >
-              <FaTrash />
+              <FaTrash /> Delete Domain
             </button>
           </div>
-          
+
+          <div className="domain-stats-bar">
+            <div className="domain-stat">
+              <strong>{domain.questions.length}</strong> Questions
+            </div>
+            <div className="domain-stat">
+              <strong>{calculateMaxScore(domain)}</strong> Max Score
+            </div>
+          </div>
+
           <div className="questions-list">
             {domain.questions.map((question, index) => {
               const questionKey = `${domain.id}-${index}`;
@@ -568,46 +573,108 @@ function AdminDashboard({ onLogout }) {
               );
             })}
           </div>
-        </div>
-      ))}
 
-      <div className="add-question-section">
-        <h3 className="subsection-title">Add New Question</h3>
-        <div className="add-question-form">
-          <select 
-            value={newQuestion.domainId} 
-            onChange={(e) => setNewQuestion({ ...newQuestion, domainId: e.target.value })}
-            className="screen-select"
-          >
-            {domains.map(domain => (
-              <option key={domain.id} value={domain.id}>{domain.name}</option>
-            ))}
-          </select>
-          <textarea
-            value={newQuestion.text}
-            onChange={(e) => setNewQuestion({ ...newQuestion, text: e.target.value })}
-            placeholder="Enter new question text..."
-            className="question-textarea"
-          />
-          <div className="weight-input-group">
-            <label>Weightage:</label>
-            <input
-              type="number"
-              step="0.25"
-              min="0"
-              value={newQuestion.weight}
-              onChange={(e) => setNewQuestion({ ...newQuestion, weight: e.target.value })}
-              className="weight-input"
-            />
-            <span className="weight-help">Max contribution: {(newQuestion.weight * 4).toFixed(1)} points</span>
+          <div className="add-question-section-inline">
+            <h3 className="subsection-title">Add New Question to {domain.name}</h3>
+            <div className="add-question-form">
+              <textarea
+                value={newQuestion.domainId === domain.id ? newQuestion.text : ''}
+                onChange={(e) => setNewQuestion({ ...newQuestion, domainId: domain.id, text: e.target.value })}
+                placeholder="Enter new question text..."
+                className="question-textarea"
+              />
+              <div className="weight-input-group">
+                <label>Weightage:</label>
+                <input
+                  type="number"
+                  step="0.25"
+                  min="0"
+                  value={newQuestion.domainId === domain.id ? newQuestion.weight : 1}
+                  onChange={(e) => setNewQuestion({ ...newQuestion, domainId: domain.id, weight: e.target.value })}
+                  className="weight-input"
+                />
+                <span className="weight-help">Max contribution: {((newQuestion.domainId === domain.id ? newQuestion.weight : 1) * 4).toFixed(1)} points</span>
+              </div>
+              <button className="btn btn-primary" onClick={() => {
+                if (newQuestion.text.trim()) {
+                  handleAddQuestion();
+                  setNewQuestion({ domainId: domain.id, text: '', weight: 1 });
+                }
+              }}>
+                <FaPlus /> Add Question
+              </button>
+            </div>
           </div>
-          <button className="btn btn-primary" onClick={handleAddQuestion}>
-            <FaPlus /> Add Question
-          </button>
+        </div>
+      );
+    }
+
+    // Default view: Show domain list
+    return (
+      <div className="questions-section">
+        <h2 className="section-title">Domain Management</h2>
+        <p className="section-subtitle">Select a domain to view and edit its questions</p>
+        
+        <div className="add-domain-container">
+          {showAddDomain ? (
+            <div className="add-domain-form">
+              <input
+                type="text"
+                value={newDomain.name}
+                onChange={(e) => setNewDomain({ ...newDomain, name: e.target.value })}
+                placeholder="Domain name (e.g., Resilience)"
+                className="domain-input"
+              />
+              <input
+                type="color"
+                value={newDomain.color}
+                onChange={(e) => setNewDomain({ ...newDomain, color: e.target.value })}
+                className="color-input"
+                title="Choose domain color"
+              />
+              <button className="btn-save" onClick={handleAddDomain}>Add Domain</button>
+              <button className="btn-cancel" onClick={() => setShowAddDomain(false)}>Cancel</button>
+            </div>
+          ) : (
+            <button className="btn btn-primary" onClick={() => setShowAddDomain(true)}>
+              <FaPlus /> Add New Domain
+            </button>
+          )}
+        </div>
+
+        <div className="domains-grid">
+          {domains.map((domain) => (
+            <div 
+              key={domain.id} 
+              className="domain-card" 
+              onClick={() => setSelectedDomain(domain.id)}
+              style={{ borderTopColor: domain.color }}
+            >
+              <div className="domain-card-header">
+                <span className="domain-color-badge-large" style={{ backgroundColor: domain.color }}></span>
+                <h3 className="domain-card-title">{domain.name}</h3>
+              </div>
+              <div className="domain-card-stats">
+                <div className="domain-card-stat">
+                  <FaQuestionCircle style={{ color: domain.color }} />
+                  <span><strong>{domain.questions.length}</strong> Questions</span>
+                </div>
+                <div className="domain-card-stat">
+                  <FaCalculator style={{ color: domain.color }} />
+                  <span><strong>{calculateMaxScore(domain)}</strong> Max Score</span>
+                </div>
+              </div>
+              <div className="domain-card-footer">
+                <span className="domain-card-link" style={{ color: domain.color }}>
+                  View & Edit Questions →
+                </span>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   const renderScoring = () => (
     <div className="scoring-section">
@@ -791,7 +858,45 @@ function AdminDashboard({ onLogout }) {
     </div>
   );
 
-  const renderTestHistory = () => (
+  const renderTestHistory = () => {
+    // Apply filtering
+    let filteredData = testHistory.filter(test => {
+      // Filter by domain
+      if (filterDomain !== 'all' && !test.domains.map(d => d.toLowerCase()).includes(filterDomain.toLowerCase())) {
+        return false;
+      }
+      
+      // Filter by status
+      if (filterStatus !== 'all') {
+        const scoreEntries = Object.entries(test.scores);
+        const avgPercentage = scoreEntries.reduce((sum, [domain, score]) => sum + score, 0) / scoreEntries.length;
+        const level = getScoreLevel(avgPercentage);
+        if (level.label.toLowerCase() !== filterStatus.toLowerCase()) {
+          return false;
+        }
+      }
+      
+      return true;
+    });
+
+    // Apply sorting
+    filteredData = [...filteredData].sort((a, b) => {
+      let comparison = 0;
+      
+      if (sortBy === 'date') {
+        comparison = new Date(a.date) - new Date(b.date);
+      } else if (sortBy === 'userId') {
+        comparison = a.userId.localeCompare(b.userId);
+      } else if (sortBy === 'avgScore') {
+        const avgA = Object.values(a.scores).reduce((sum, score) => sum + score, 0) / Object.values(a.scores).length;
+        const avgB = Object.values(b.scores).reduce((sum, score) => sum + score, 0) / Object.values(b.scores).length;
+        comparison = avgA - avgB;
+      }
+      
+      return sortOrder === 'asc' ? comparison : -comparison;
+    });
+
+    return (
     <div className="test-history-section">
       <h2 className="section-title">Test Submission History</h2>
       
@@ -819,6 +924,44 @@ function AdminDashboard({ onLogout }) {
         </div>
       </div>
 
+      {/* Sorting and Filtering Controls */}
+      <div className="history-controls">
+        <div className="control-group">
+          <label>Sort By:</label>
+          <select value={sortBy} onChange={(e) => setSortBy(e.target.value)} className="history-select">
+            <option value="date">Date & Time</option>
+            <option value="userId">User ID</option>
+            <option value="avgScore">Average Score</option>
+          </select>
+          
+          <select value={sortOrder} onChange={(e) => setSortOrder(e.target.value)} className="history-select">
+            <option value="desc">Descending</option>
+            <option value="asc">Ascending</option>
+          </select>
+        </div>
+
+        <div className="control-group">
+          <label>Filter by Domain:</label>
+          <select value={filterDomain} onChange={(e) => setFilterDomain(e.target.value)} className="history-select">
+            <option value="all">All Domains</option>
+            {domains.map(domain => (
+              <option key={domain.id} value={domain.name}>{domain.name}</option>
+            ))}
+          </select>
+        </div>
+
+        <div className="control-group">
+          <label>Filter by Status:</label>
+          <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)} className="history-select">
+            <option value="all">All Statuses</option>
+            <option value="low">Low</option>
+            <option value="mild">Mild</option>
+            <option value="moderate">Moderate</option>
+            <option value="high">High</option>
+          </select>
+        </div>
+      </div>
+
       <div className="test-history-table-container">
         <table className="test-history-table">
           <thead>
@@ -831,7 +974,12 @@ function AdminDashboard({ onLogout }) {
             </tr>
           </thead>
           <tbody>
-            {testHistory.map((test) => {
+            {filteredData.length === 0 ? (
+              <tr>
+                <td colSpan="5" className="no-data">No test submissions match the selected filters</td>
+              </tr>
+            ) : (
+              filteredData.map((test) => {
               const scoreEntries = Object.entries(test.scores);
               const avgPercentage = scoreEntries.reduce((sum, [domain, score]) => sum + score, 0) / scoreEntries.length;
               const level = getScoreLevel(avgPercentage);
@@ -868,12 +1016,14 @@ function AdminDashboard({ onLogout }) {
                   </td>
                 </tr>
               );
-            })}
+            })
+            )}
           </tbody>
         </table>
       </div>
     </div>
   );
+  };
 
   return (
     <div className="admin-dashboard">
