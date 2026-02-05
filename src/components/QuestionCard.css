@@ -1,5 +1,5 @@
 .question-card {
-  background: var(--bg-secondary);
+  background: white;
   border-radius: 15px;
   padding: 25px;
   margin-bottom: 25px;
@@ -9,7 +9,7 @@
 
 .question-card.unanswered {
   border-color: #dc3545;
-  background: #3a1f1f;
+  background: #fff5f5;
 }
 
 .question-card:hover {
@@ -22,7 +22,7 @@
 
 .question-number {
   display: inline-block;
-  background: linear-gradient(135deg, #5EC492 0%, #3BA776 100%);
+  background: #2C2C2C;
   color: white;
   padding: 5px 12px;
   border-radius: 20px;
@@ -48,7 +48,7 @@
 .scale-option {
   flex: 1;
   min-width: 120px;
-  background: var(--bg-card);
+  background: var(--tertiary-color);
   border: 2px solid var(--border-color);
   border-radius: 12px;
   padding: 15px 10px;
@@ -62,13 +62,13 @@
 }
 
 .scale-option:hover {
-  border-color: var(--primary-color);
+  border-color: var(--text-primary);
   transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(94, 196, 146, 0.3);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
 .scale-option.selected {
-  background: linear-gradient(135deg, #5EC492 0%, #3BA776 100%);
+  background: var(--text-primary);
   border-color: transparent;
   color: white;
 }

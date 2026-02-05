@@ -9,7 +9,8 @@ function Navbar({ currentPage, setCurrentPage }) {
     { id: 'home', label: 'Home' },
     { id: 'tests', label: 'Tests' },
     { id: 'about', label: 'About' },
-    { id: 'contact', label: 'Contact' }
+    { id: 'contact', label: 'Contact' },
+    { id: 'login', label: 'Login' }
   ];
 
   const handleNavClick = (pageId) => {

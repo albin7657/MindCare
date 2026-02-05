@@ -11,10 +11,6 @@
   font-size: 32px;
   color: var(--text-primary);
   margin-bottom: 10px;
-  background: linear-gradient(135deg, #5EC492 0%, #81D4A6 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
 }
 
 .screen-description {
@@ -70,14 +66,19 @@
   font-size: 16px;
   transition: all 0.3s ease;
   font-family: inherit;
-  background: var(--bg-secondary);
+  background: white;
   color: var(--text-primary);
 }
 
 .form-input:focus {
   outline: none;
-  border-color: var(--primary-color);
-  box-shadow: 0 0 0 3px rgba(94, 196, 146, 0.2);
+  border-color: var(--text-primary);
+  box-shadow: 0 0 0 3px rgba(44, 44, 44, 0.1);
+}
+
+.form-input::placeholder {
+  color: #b8b8b8;
+  opacity: 1;
 }
 
 .checkbox-group {

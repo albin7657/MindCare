@@ -7,6 +7,8 @@
 .progress-bar-container {
   padding: 20px 30px !important;
   margin-bottom: 30px;
+  background: var(--tertiary-color) !important;
+  border: 1px solid var(--quaternary-color) !important;
 }
 
 .progress-info {
@@ -38,22 +40,24 @@
 
 .progress-fill {
   height: 100%;
-  background: linear-gradient(90deg, #5EC492 0%, #3BA776 100%);
+  background: var(--text-primary);
   transition: width 0.3s ease;
   border-radius: 10px;
 }
 
 .questionnaire-content {
   padding: 40px !important;
+  background: var(--tertiary-color) !important;
+  border: 1px solid var(--quaternary-color) !important;
 }
 
 .validation-warning {
-  background: #3a2f0f;
-  border: 2px solid #ffc107;
+  background: #fff3cd;
+  border: 2px solid #856404;
   border-radius: 12px;
   padding: 15px 20px;
   margin-bottom: 25px;
-  color: #ffc107;
+  color: #856404;
   font-weight: 600;
   font-size: 16px;
   text-align: center;

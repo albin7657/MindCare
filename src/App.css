@@ -1,15 +1,20 @@
 :root {
-  --primary-color: #5EC492;
-  --secondary-color: #81D4A6;
-  --accent-color: #3BA776;
-  --bg-primary: #0f0f1e;
-  --bg-secondary: #1a1a2e;
-  --bg-card: #252538;
-  --text-primary: #e4e4e7;
-  --text-secondary: #a1a1aa;
-  --border-color: #3f3f46;
-  --shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
-  --shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.5);
+  --primary-color: #faf6df;
+  --secondary-color: #f7f0c9;
+  --tertiary-color: #f8fcef;
+  --quaternary-color: #d8e1c8;
+  --accent-color: #e8dfa5;
+  --light-cream: #fefdf8;
+  --light-green: #E6F5E2;
+  --soft-beige: #F5EDDC;
+  --bg-primary: #faf6df;
+  --bg-secondary: #f7f0c9;
+  --bg-card: #ffffff;
+  --text-primary: #2c2c2c;
+  --text-secondary: #5a5a5a;
+  --border-color: #e8dfa5;
+  --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.15);
 }
 
 * {
@@ -20,7 +25,7 @@
 
 body {
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  background: linear-gradient(135deg, #0f0f1e 0%, #1a1a2e 100%);
+  background: var(--primary-color);
   min-height: 100vh;
   color: var(--text-primary);
 }
@@ -69,26 +74,27 @@ body {
 }
 
 .btn-primary {
-  background: var(--primary-color);
-  color: var(--white);
+  background: var(--text-primary);
+  color: #2C2C2C;
   box-shadow: var(--shadow);
 }
 
 .btn-primary:hover {
-  background: #3BA776;
+  background: var(--text-secondary);
+  color: #2C2C2C;
   transform: translateY(-2px);
   box-shadow: var(--shadow-lg);
 }
 
 .btn-secondary {
-  background: var(--bg-secondary);
-  color: var(--primary-color);
-  border: 2px solid var(--primary-color);
+  background: transparent;
+  color: var(--text-primary);
+  border: 2px solid var(--text-primary);
 }
 
 .btn-secondary:hover {
-  background: var(--primary-color);
-  color: var(--white);
+  background: var(--text-primary);
+  color: var(--primary-color);
 }
 
 .card {
