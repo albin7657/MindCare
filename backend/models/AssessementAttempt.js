@@ -1,4 +1,4 @@
-const mongoose = require("mongoose");
+import mongoose from "mongoose";
 
 const AttemptSchema = new mongoose.Schema({
   student_id: {
@@ -13,4 +13,4 @@ const AttemptSchema = new mongoose.Schema({
   status: String
 });
 
-module.exports = mongoose.model("AssessmentAttempt", AttemptSchema);
+export default mongoose.model("AssessmentAttempt", AttemptSchema);

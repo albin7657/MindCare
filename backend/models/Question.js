@@ -1,14 +1,19 @@
-const mongoose = require("mongoose");
+import mongoose from "mongoose";
 
 const QuestionSchema = new mongoose.Schema({
-  question_text: String,
   domain_id: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: "Domain"
+    ref: "Domain",
+    required: true
   },
-  options: [
-    { option_text: String, points: Number }
-  ]
+  question_text: {
+    type: String,
+    required: true
+  },
+  weight: {
+    type: Number,
+    default: 1
+  }
 });
 
-module.exports = mongoose.model("Question", QuestionSchema);
+export default mongoose.model("Question", QuestionSchema);

@@ -1,4 +1,5 @@
-const mongoose = require("mongoose");
+import mongoose from "mongoose";
+
 
 const ScoreSchema = new mongoose.Schema({
   attempt_id: {
@@ -13,4 +14,5 @@ const ScoreSchema = new mongoose.Schema({
   }
 });
 
-module.exports = mongoose.model("Score", ScoreSchema);
+export default mongoose.model("Score", ScoreSchema);
+

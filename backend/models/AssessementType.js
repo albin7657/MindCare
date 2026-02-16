@@ -1,4 +1,4 @@
-const mongoose = require("mongoose");
+import mongoose from "mongoose";
 
 const AssessmentTypeSchema = new mongoose.Schema({
   name: String,
@@ -6,4 +6,5 @@ const AssessmentTypeSchema = new mongoose.Schema({
   description: String
 });
 
-module.exports = mongoose.model("AssessmentType", AssessmentTypeSchema);
+
+export default mongoose.model("AssessmentType", AssessmentTypeSchema);

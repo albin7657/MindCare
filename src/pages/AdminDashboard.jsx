@@ -1,123 +1,17 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { FaUsers, FaChartBar, FaQuestionCircle, FaCog, FaSignOutAlt, FaPlus, FaTrash, FaEdit, FaHistory, FaCalculator, FaChevronDown, FaArrowLeft } from 'react-icons/fa';
 import './AdminDashboard.css';
 
 function AdminDashboard({ onLogout }) {
   const [activeTab, setActiveTab] = useState('overview');
-  const [domains, setDomains] = useState([
-    {
-      id: 'stress',
-      name: 'Stress',
-      color: '#FF8F8F',
-      questions: [
-        { 
-          text: "In the last month, how often have you felt nervous and stressed?", 
-          weight: 1,
-          options: [
-            { value: 0, label: 'Never' },
-            { value: 1, label: 'Rarely' },
-            { value: 2, label: 'Sometimes' },
-            { value: 3, label: 'Often' },
-            { value: 4, label: 'Almost Always' }
-          ]
-        },
-        { 
-          text: "In the last month, how often have you found that you could not cope with all the things that you had to do?", 
-          weight: 1,
-          options: [
-            { value: 0, label: 'Never' },
-            { value: 1, label: 'Rarely' },
-            { value: 2, label: 'Sometimes' },
-            { value: 3, label: 'Often' },
-            { value: 4, label: 'Almost Always' }
-          ]
-        },
-        { 
-          text: "You feel that too many demands are being made on you", 
-          weight: 1,
-          options: [
-            { value: 0, label: 'Never' },
-            { value: 1, label: 'Rarely' },
-            { value: 2, label: 'Sometimes' },
-            { value: 3, label: 'Often' },
-            { value: 4, label: 'Almost Always' }
-          ]
-        },
-        { 
-          text: "You have many worries", 
-          weight: 1,
-          options: [
-            { value: 0, label: 'Never' },
-            { value: 1, label: 'Rarely' },
-            { value: 2, label: 'Sometimes' },
-            { value: 3, label: 'Often' },
-            { value: 4, label: 'Almost Always' }
-          ]
-        }
-      ]
-    },
-    {
-      id: 'anxiety',
-      name: 'Anxiety',
-      color: '#f6ad55',
-      questions: [
-        { text: "I experienced breathing difficulty (e.g. excessively rapid breathing, breathlessness in the absence of physical exertion)", weight: 1 },
-        { text: "I felt I was close to panic", weight: 1 },
-        { text: "In the last three months, have you found that it's hard to stop yourself from worrying?", weight: 1 },
-        { text: "Feeling afraid, as if something awful might happen", weight: 1 }
-      ]
-    },
-    {
-      id: 'depression',
-      name: 'Depression',
-      color: '#9f7aea',
-      questions: [
-        { text: "I couldn't seem to experience any positive feeling at all", weight: 1 },
-        { text: "I found it difficult to work up the initiative to do things", weight: 1 },
-        { text: "I felt that I had nothing to look forward to", weight: 1 },
-        { text: "I felt down-hearted and blue", weight: 1 }
-      ]
-    },
-    {
-      id: 'burnout',
-      name: 'Burnout',
-      color: '#ed8936',
-      questions: [
-        { text: "I feel like a failure", weight: 1 },
-        { text: "I feel emotionally exhausted from my work/studies", weight: 1 },
-        { text: "I feel used up at the end of the day", weight: 1 },
-        { text: "I feel burned out from my work/studies", weight: 1 }
-      ]
-    },
-    {
-      id: 'sleep',
-      name: 'Sleep Quality',
-      color: '#4299e1',
-      questions: [
-        { text: "During the past month, how would you rate your sleep quality overall?", weight: 0.75 },
-        { text: "During the past month, how often have you had trouble sleeping?", weight: 0.75 },
-        { text: "During the past month, how often have you taken medicine to help you sleep?", weight: 0.75 },
-        { text: "During the past month, how often have you had trouble staying awake?", weight: 0.75 }
-      ]
-    }
-  ]);
+  const [domains, setDomains] = useState([]);
 
   const [editingQuestion, setEditingQuestion] = useState(null);
-  const [newQuestion, setNewQuestion] = useState({ domainId: 'stress', text: '', weight: 1 });
+  const [newQuestion, setNewQuestion] = useState({ domainId: '', text: '', weight: 1 });
   const [newDomain, setNewDomain] = useState({ name: '', color: '#3498db' });
   const [showAddDomain, setShowAddDomain] = useState(false);
   const [selectedDomain, setSelectedDomain] = useState(null); // For navigating to domain detail view
   const [expandedQuestion, setExpandedQuestion] = useState(null);
-  const [questionOptions, setQuestionOptions] = useState({
-    // Default options for scale-based questions
-    scale: [
-      { value: 0, label: 'Never' },
-      { value: 1, label: 'Rarely' },
-      { value: 2, label: 'Sometimes' },
-      { value: 3, label: 'Often' },
-      { value: 4, label: 'Almost Always' }
-    ]
-  });
   const [newOption, setNewOption] = useState({ value: '', label: '' });
   
   // Scoring thresholds (editable)
@@ -129,79 +23,103 @@ function AdminDashboard({ onLogout }) {
   });
   const [editingThresholds, setEditingThresholds] = useState(false);
   
-  // Mock test history data
-  const [testHistory, setTestHistory] = useState([
-    {
-      id: 1,
-      date: '2026-02-05 14:30',
-      userId: 'User_7821',
-      domains: ['Stress', 'Anxiety', 'Depression'],
-      scores: { stress: 75, anxiety: 68, depression: 45 }
-    },
-    {
-      id: 2,
-      date: '2026-02-05 13:15',
-      userId: 'User_4392',
-      domains: ['Burnout', 'Sleep Quality'],
-      scores: { burnout: 82, sleep: 71 }
-    },
-    {
-      id: 3,
-      date: '2026-02-05 11:45',
-      userId: 'User_9153',
-      domains: ['Stress', 'Anxiety', 'Depression', 'Burnout', 'Sleep Quality'],
-      scores: { stress: 34, anxiety: 41, depression: 29, burnout: 38, sleep: 52 }
-    },
-    {
-      id: 4,
-      date: '2026-02-05 10:20',
-      userId: 'User_2764',
-      domains: ['Depression', 'Sleep Quality'],
-      scores: { depression: 88, sleep: 79 }
-    },
-    {
-      id: 5,
-      date: '2026-02-05 09:00',
-      userId: 'User_5418',
-      domains: ['Stress', 'Anxiety'],
-      scores: { stress: 22, anxiety: 18 }
-    },
-    {
-      id: 6,
-      date: '2026-02-04 16:30',
-      userId: 'User_6127',
-      domains: ['Burnout'],
-      scores: { burnout: 91 }
-    },
-    {
-      id: 7,
-      date: '2026-02-04 15:10',
-      userId: 'User_8839',
-      domains: ['Stress', 'Anxiety', 'Depression', 'Burnout'],
-      scores: { stress: 56, anxiety: 63, depression: 48, burnout: 67 }
-    },
-    {
-      id: 8,
-      date: '2026-02-04 13:45',
-      userId: 'User_1205',
-      domains: ['Sleep Quality'],
-      scores: { sleep: 33 }
-    },
-    {
-      id: 9,
-      date: '2026-02-04 11:20',
-      userId: 'User_7492',
-      domains: ['Stress', 'Depression'],
-      scores: { stress: 44, depression: 51 }
-    },
-    {
-      id: 10,
-      date: '2026-02-04 09:15',
-      userId: 'User_3681',
-      domains: ['Anxiety', 'Burnout', 'Sleep Quality'],
-      scores: { anxiety: 77, burnout: 70, sleep: 65 }
+  // Test history (empty by default)
+  const [testHistory, setTestHistory] = useState([]);
+
+  // Alert management
+  const [alert, setAlert] = useState(null);
+
+  // Auto-dismiss alert after 5 seconds
+  useEffect(() => {
+    if (alert) {
+      const timer = setTimeout(() => setAlert(null), 5000);
+      return () => clearTimeout(timer);
     }
-  ]);
+  }, [alert]);
+
+  // Fetch domains from backend on mount
+  useEffect(() => {
+    const fetchDomains = async () => {
+      try {
+        const res = await fetch('http://localhost:5000/api/domains');
+        if (!res.ok) throw new Error('Failed fetching domains');
+        const data = await res.json();
+
+        const mapped = await Promise.all(data.map(async (d) => {
+          const domainId = d._id || d.id;
+          let questions = [];
+          try {
+            const qRes = await fetch(`http://localhost:5000/api/questions/domain/${domainId}`);
+            if (qRes.ok) {
+              const qData = await qRes.json();
+              questions = await Promise.all(qData.map(async (q) => {
+                const qId = q._id || q.id;
+                let options = [];
+                try {
+                  const oRes = await fetch(`http://localhost:5000/api/options/question/${qId}`);
+                  if (oRes.ok) options = await oRes.json();
+                } catch (e) {
+                  console.error('Failed fetching options for question', qId, e);
+                }
+                return { id: qId, text: q.question_text || q.text || '', weight: q.weight || 1, options };
+              }));
+            }
+          } catch (e) {
+            console.error('Failed fetching questions for domain', domainId, e);
+          }
+
+          return {
+            id: domainId,
+            name: d.domain_name || d.name,
+            color: d.color || '#3498db',
+            questions
+          };
+        }));
+
+        setDomains(mapped);
+      } catch (err) {
+        console.error('Error fetching domains:', err);
+      }
+    };
+
+    fetchDomains();
+  }, []);
+
+  // When a domain is selected, fetch its questions from backend
+  useEffect(() => {
+    if (!selectedDomain) return;
+
+    const fetchQuestions = async () => {
+      try {
+        const res = await fetch(`http://localhost:5000/api/questions/domain/${selectedDomain}`);
+        if (!res.ok) throw new Error('Failed fetching questions');
+        const data = await res.json();
+
+        const questions = await Promise.all(data.map(async (q) => {
+          const qId = q._id || q.id;
+          let options = [];
+          try {
+            const oRes = await fetch(`http://localhost:5000/api/options/question/${qId}`);
+            if (oRes.ok) options = await oRes.json();
+          } catch (e) {
+            console.error('Failed fetching options for question', qId, e);
+          }
+          return { id: qId, text: q.question_text || q.text || '', weight: q.weight || 1, options };
+        }));
+
+        setDomains(prev => prev.map(d => {
+          if (d.id === selectedDomain) {
+            return { ...d, questions };
+          }
+          return d;
+        }));
+      } catch (err) {
+        console.error('Error fetching questions for domain', selectedDomain, err);
+      }
+    };
+
+    fetchQuestions();
+  }, [selectedDomain]);
 
   // Test history sorting and filtering state
   const [sortBy, setSortBy] = useState('date'); // 'date', 'userId', 'avgScore'
@@ -211,15 +129,15 @@ function AdminDashboard({ onLogout }) {
 
   // Mock data for testing statistics
   const mockStats = {
-    totalTests: 247,
-    todayTests: 18,
-    weekTests: 89,
-    monthTests: 247,
-    avgStressScore: 9.4,
-    avgAnxietyScore: 8.7,
-    avgDepressionScore: 7.2,
-    avgBurnoutScore: 10.1,
-    avgSleepScore: 6.3
+    totalTests: 0,
+    todayTests: 0,
+    weekTests: 0,
+    monthTests: 0,
+    avgStressScore: 0,
+    avgAnxietyScore: 0,
+    avgDepressionScore: 0,
+    avgBurnoutScore: 0,
+    avgSleepScore: 0
   };
 
   const handleEditQuestion = (domainId, index) => {
@@ -233,73 +151,144 @@ function AdminDashboard({ onLogout }) {
   };
 
   const handleSaveQuestion = () => {
-    if (editingQuestion) {
-      const updatedDomains = domains.map(domain => {
-        if (domain.id === editingQuestion.domainId) {
-          const updatedQuestions = [...domain.questions];
-          updatedQuestions[editingQuestion.index] = {
-            text: editingQuestion.text,
-            weight: parseFloat(editingQuestion.weight) || 1
-          };
-          return { ...domain, questions: updatedQuestions };
+    (async () => {
+      if (!editingQuestion) return;
+      const { domainId, index, text, weight } = editingQuestion;
+      try {
+        const domain = domains.find(d => d.id === domainId);
+        const q = domain?.questions?.[index];
+        if (q && q.id) {
+          const res = await fetch(`http://localhost:5000/api/questions/${q.id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ question_text: text, weight: parseFloat(weight) || 1 })
+          });
+          if (!res.ok) throw new Error('Failed to update question');
+          const updated = await res.json();
+          setDomains(prev => prev.map(d => {
+            if (d.id === domainId) {
+              const updatedQuestions = [...d.questions];
+              updatedQuestions[index] = { ...updatedQuestions[index], id: updated._id || updated.id, text: updated.question_text || text, weight: updated.weight || parseFloat(weight) || 1 };
+              return { ...d, questions: updatedQuestions };
+            }
+            return d;
+          }));
+        } else {
+          setDomains(prev => prev.map(d => {
+            if (d.id === domainId) {
+              const updatedQuestions = [...d.questions];
+              updatedQuestions[index] = { text, weight: parseFloat(weight) || 1 };
+              return { ...d, questions: updatedQuestions };
+            }
+            return d;
+          }));
         }
-        return domain;
-      });
-      setDomains(updatedDomains);
-      setEditingQuestion(null);
-    }
+        setEditingQuestion(null);
+      } catch (err) {
+        console.error('Save question error', err);
+        setAlert({ type: 'error', message: 'Failed to save question' });
+      }
+    })();
   };
 
   const handleAddQuestion = () => {
-    if (newQuestion.text.trim()) {
-      const updatedDomains = domains.map(domain => {
-        if (domain.id === newQuestion.domainId) {
-          return {
-            ...domain,
-            questions: [...domain.questions, { 
-              text: newQuestion.text, 
-              weight: parseFloat(newQuestion.weight) || 1 
-            }]
-          };
+    (async () => {
+      if (!newQuestion.text.trim()) return setAlert({ type: 'error', message: 'Enter question text' });
+      try {
+        const res = await fetch('http://localhost:5000/api/questions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ domain_id: newQuestion.domainId, question_text: newQuestion.text, weight: newQuestion.weight })
+        });
+
+        if (!res.ok) {
+          const error = await res.json();
+          return setAlert({ type: 'error', message: error.error || 'Failed to create question' });
         }
-        return domain;
-      });
-      setDomains(updatedDomains);
-      setNewQuestion({ domainId: 'stress', text: '', weight: 1 });
-    }
+        const created = await res.json();
+
+        setDomains(prev => prev.map(d => {
+          if (d.id === newQuestion.domainId) {
+            const q = { id: created._id || created.id, text: created.question_text || created.text, weight: created.weight || 1, options: created.options || [] };
+            return { ...d, questions: [...d.questions, q] };
+          }
+          return d;
+        }));
+
+        setNewQuestion({ domainId: '', text: '', weight: 1 });
+        setAlert({ type: 'success', message: 'Question added successfully' });
+      } catch (err) {
+        console.error('Add question error', err);
+        setAlert({ type: 'error', message: 'Failed to add question' });
+      }
+    })();
   };
 
   const handleDeleteQuestion = (domainId, index) => {
-    if (window.confirm('Are you sure you want to delete this question?')) {
-      const updatedDomains = domains.map(domain => {
-        if (domain.id === domainId) {
-          const updatedQuestions = domain.questions.filter((_, i) => i !== index);
-          return { ...domain, questions: updatedQuestions };
+    if (!window.confirm('Are you sure you want to delete this question?')) return;
+
+    (async () => {
+      try {
+        const domain = domains.find(d => d.id === domainId);
+        if (!domain) return;
+        const question = domain.questions[index];
+        if (!question || !question.id) {
+          setDomains(prev => prev.map(d => d.id === domainId ? { ...d, questions: d.questions.filter((_, i) => i !== index) } : d));
+          return;
         }
-        return domain;
-      });
-      setDomains(updatedDomains);
-    }
+
+        const res = await fetch(`http://localhost:5000/api/questions/${question.id}`, { method: 'DELETE' });
+        if (!res.ok) throw new Error('Failed to delete question');
+
+        setDomains(prev => prev.map(d => d.id === domainId ? { ...d, questions: d.questions.filter(q => q.id !== question.id) } : d));
+        setAlert({ type: 'success', message: 'Question deleted successfully' });
+      } catch (err) {
+        console.error('Delete question error', err);
+        setAlert({ type: 'error', message: 'Failed to delete question' });
+      }
+    })();
   };
 
   const handleAddDomain = () => {
-    if (newDomain.name.trim()) {
-      const domainId = newDomain.name.toLowerCase().replace(/\s+/g, '-');
-      setDomains([...domains, {
-        id: domainId,
-        name: newDomain.name,
-        color: newDomain.color,
-        questions: []
-      }]);
-      setNewDomain({ name: '', color: '#3498db' });
-      setShowAddDomain(false);
-    }
+    (async () => {
+      if (!newDomain.name.trim()) return setAlert({ type: 'error', message: 'Enter domain name' });
+      try {
+        const res = await fetch('http://localhost:5000/api/domains', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ domain_name: newDomain.name, color: newDomain.color })
+        });
+        if (!res.ok) {
+          const error = await res.json();
+          return setAlert({ type: 'error', message: error.error || 'Failed to create domain' });
+        }
+        const created = await res.json();
+        const d = { id: created._id || created.id, name: created.domain_name || created.name || newDomain.name, color: created.color || newDomain.color, questions: [] };
+        setDomains(prev => [...prev, d]);
+        setNewDomain({ name: '', color: '#3498db' });
+        setShowAddDomain(false);
+        setAlert({ type: 'success', message: 'Domain added successfully' });
+      } catch (err) {
+        console.error('Add domain error', err);
+        setAlert({ type: 'error', message: 'Failed to add domain' });
+      }
+    })();
   };
 
   const handleDeleteDomain = (domainId) => {
-    if (window.confirm('Are you sure you want to delete this entire domain and all its questions?')) {
-      setDomains(domains.filter(d => d.id !== domainId));
-    }
+    if (!window.confirm('Are you sure you want to delete this entire domain and all its questions?')) return;
+
+    (async () => {
+      try {
+        const res = await fetch(`http://localhost:5000/api/domains/${domainId}`, { method: 'DELETE' });
+        if (!res.ok) throw new Error('Failed to delete domain');
+        setDomains(prev => prev.filter(d => d.id !== domainId));
+        setAlert({ type: 'success', message: 'Domain deleted successfully' });
+      } catch (err) {
+        console.error('Delete domain error', err);
+        setAlert({ type: 'error', message: 'Failed to delete domain' });
+      }
+    })();
   };
 
   const calculateMaxScore = (domain) => {
@@ -323,35 +312,80 @@ function AdminDashboard({ onLogout }) {
   };
 
   const handleAddOption = (domainId, questionIndex) => {
-    if (newOption.label.trim() && newOption.value !== '') {
-      const key = `${domainId}-${questionIndex}`;
-      setQuestionOptions({
-        ...questionOptions,
-        [key]: [...(questionOptions[key] || questionOptions.scale), {
-          value: parseInt(newOption.value),
-          label: newOption.label
-        }].sort((a, b) => a.value - b.value)
-      });
-      setNewOption({ value: '', label: '' });
-    }
+    (async () => {
+      if (!newOption.label.trim() || newOption.value === '') return setAlert({ type: 'error', message: 'Enter option text and points' });
+      try {
+        const domain = domains.find(d => d.id === domainId);
+        if (!domain) return;
+        const question = domain.questions[questionIndex];
+        if (!question || !question.id) return setAlert({ type: 'error', message: 'Question not found' });
+
+        const res = await fetch('http://localhost:5000/api/options', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            question_id: question.id,
+            option_text: newOption.label,
+            points: parseInt(newOption.value) || 0
+          })
+        });
+        if (!res.ok) {
+          const error = await res.json();
+          return setAlert({ type: 'error', message: error.error || 'Failed to create option' });
+        }
+        const created = await res.json();
+
+        setDomains(prev => prev.map(d => {
+          if (d.id === domainId) {
+            const updatedQuestions = [...d.questions];
+            updatedQuestions[questionIndex] = {
+              ...updatedQuestions[questionIndex],
+              options: [...(updatedQuestions[questionIndex].options || []), created]
+            };
+            return { ...d, questions: updatedQuestions };
+          }
+          return d;
+        }));
+        setNewOption({ value: '', label: '' });
+        setAlert({ type: 'success', message: 'Option added successfully' });
+      } catch (err) {
+        console.error('Add option error', err);
+        setAlert({ type: 'error', message: 'Failed to add option' });
+      }
+    })();
   };
 
-  const handleDeleteOption = (domainId, questionIndex, optionValue) => {
-    const key = `${domainId}-${questionIndex}`;
-    const currentOptions = questionOptions[key] || questionOptions.scale;
-    if (currentOptions.length > 2) {
-      setQuestionOptions({
-        ...questionOptions,
-        [key]: currentOptions.filter(opt => opt.value !== optionValue)
-      });
-    } else {
-      alert('A question must have at least 2 options');
-    }
+  const handleDeleteOption = (domainId, questionIndex, optionId) => {
+    if (!window.confirm('Delete this option?')) return;
+    (async () => {
+      try {
+        const res = await fetch(`http://localhost:5000/api/options/${optionId}`, { method: 'DELETE' });
+        if (!res.ok) throw new Error('Failed to delete option');
+
+        setDomains(prev => prev.map(d => {
+          if (d.id === domainId) {
+            const updatedQuestions = [...d.questions];
+            updatedQuestions[questionIndex] = {
+              ...updatedQuestions[questionIndex],
+              options: updatedQuestions[questionIndex].options.filter(opt => opt._id !== optionId)
+            };
+            return { ...d, questions: updatedQuestions };
+          }
+          return d;
+        }));
+        setAlert({ type: 'success', message: 'Option deleted successfully' });
+      } catch (err) {
+        console.error('Delete option error', err);
+        setAlert({ type: 'error', message: 'Failed to delete option' });
+      }
+    })();
   };
 
   const getQuestionOptions = (domainId, questionIndex) => {
-    const key = `${domainId}-${questionIndex}`;
-    return questionOptions[key] || questionOptions.scale;
+    const domain = domains.find(d => d.id === domainId);
+    if (!domain) return [];
+    const question = domain.questions[questionIndex];
+    return question?.options || [];
   };
 
   const renderOverview = () => (
@@ -530,11 +564,11 @@ function AdminDashboard({ onLogout }) {
                           <div className="options-list">
                             {options.map((option, optIdx) => (
                               <div key={optIdx} className="option-item">
-                                <span className="option-value-badge">{option.value}</span>
-                                <span className="option-label-display">{option.label}</span>
+                                <span className="option-value-badge">{option.points || option.value || 0}</span>
+                                <span className="option-label-display">{option.option_text || option.label || ''}</span>
                                 <button 
                                   className="btn-option-delete" 
-                                  onClick={() => handleDeleteOption(domain.id, index, option.value)}
+                                  onClick={() => handleDeleteOption(domain.id, index, option._id || option.id)}
                                   title="Delete option"
                                 >
                                   <FaTrash />
@@ -548,14 +582,14 @@ function AdminDashboard({ onLogout }) {
                               type="number"
                               value={newOption.value}
                               onChange={(e) => setNewOption({ ...newOption, value: e.target.value })}
-                              placeholder="Value (0-4)"
+                              placeholder="Points"
                               className="option-value-input"
                             />
                             <input
                               type="text"
                               value={newOption.label}
                               onChange={(e) => setNewOption({ ...newOption, label: e.target.value })}
-                              placeholder="Label (e.g., Never)"
+                              placeholder="Option Text"
                               className="option-label-input"
                             />
                             <button 
@@ -1027,6 +1061,12 @@ function AdminDashboard({ onLogout }) {
 
   return (
     <div className="admin-dashboard">
+      {alert && (
+        <div className={`alert alert-${alert.type}`}>
+          <span className="alert-message">{alert.message}</span>
+          <button className="alert-close" onClick={() => setAlert(null)}>×</button>
+        </div>
+      )}
       <div className="admin-sidebar">
         <div className="admin-brand">
           <h2>MindCare Admin</h2>

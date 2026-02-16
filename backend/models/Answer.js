@@ -1,4 +1,4 @@
-const mongoose = require("mongoose");
+import mongoose from "mongoose";
 
 const AnswerSchema = new mongoose.Schema({
   attempt_id: {
@@ -13,4 +13,4 @@ const AnswerSchema = new mongoose.Schema({
   points_awarded: Number
 });
 
-module.exports = mongoose.model("Answer", AnswerSchema);
+export default mongoose.model("Answer", AnswerSchema);

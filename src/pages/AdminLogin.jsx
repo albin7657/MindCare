@@ -92,5 +92,31 @@ function AdminLogin({ onLogin, onNavigate }) {
     </div>
   );
 }
+const handleSubmit = async (e) => {
+  e.preventDefault();
+
+  try {
+    const res = await fetch("http://localhost:5000/api/admin/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        email: credentials.username, // using username field as email
+        password: credentials.password
+      })
+    });
+
+    const data = await res.json();
+
+    if (res.ok) {
+      onLogin(data);
+    } else {
+      setError(data);
+    }
+
+  } catch (err) {
+    setError("Server error");
+  }
+};
+
 
 export default AdminLogin;
