@@ -10,16 +10,20 @@ const router = express.Router();
 // ====================================
 router.post("/", async (req, res) => {
   try {
-    const { domain_id, question_text, weight } = req.body;
+    const { domain_id, assessment_type_id, question_text, weight } = req.body;
 
     if (!question_text) {
       return res.status(400).json({ error: "Question text is required" });
     }
 
-    // Check if question already exists in this domain
-    const existingQuestion = await Question.findOne({ domain_id, question_text });
+    if (!assessment_type_id) {
+      return res.status(400).json({ error: "Assessment type is required" });
+    }
+
+    // Check if question already exists in this domain AND assessment type
+    const existingQuestion = await Question.findOne({ domain_id, assessment_type_id, question_text });
     if (existingQuestion) {
-      return res.status(400).json({ error: "This question already exists in this domain" });
+      return res.status(400).json({ error: "This question already exists in this domain for this assessment type" });
     }
 
     const question = await Question.create(req.body);
@@ -37,7 +41,24 @@ router.get("/domain/:domainId", async (req, res) => {
   try {
     const questions = await Question.find({
       domain_id: req.params.domainId
-    });
+    }).populate("assessment_type_id");
+
+    res.json(questions);
+  } catch (err) {
+    res.status(500).json("Error fetching questions");
+  }
+});
+
+
+// ====================================
+// READ QUESTIONS BY DOMAIN AND ASSESSMENT TYPE
+// ====================================
+router.get("/domain/:domainId/assessment/:assessmentTypeId", async (req, res) => {
+  try {
+    const questions = await Question.find({
+      domain_id: req.params.domainId,
+      assessment_type_id: req.params.assessmentTypeId
+    }).populate("assessment_type_id");
 
     res.json(questions);
   } catch (err) {

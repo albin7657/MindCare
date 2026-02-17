@@ -9,10 +9,6 @@ const DomainSchema = new mongoose.Schema({
   color: {
     type: String,
     default: "#3498db"
-  },
-  assessment_type_id: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "AssessmentType"
   }
 });
 

@@ -6,6 +6,11 @@ const QuestionSchema = new mongoose.Schema({
     ref: "Domain",
     required: true
   },
+  assessment_type_id: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "AssessmentType",
+    required: true
+  },
   question_text: {
     type: String,
     required: true

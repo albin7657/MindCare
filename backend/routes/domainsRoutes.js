@@ -31,7 +31,7 @@ router.get("/:id", async (req, res) => {
 // POST create new domain
 router.post("/", async (req, res) => {
   try {
-    const { domain_name, assessment_type_id, color } = req.body;
+    const { domain_name, color } = req.body;
 
     if (!domain_name) {
       return res.status(400).json({ error: "Domain name is required" });
@@ -45,7 +45,6 @@ router.post("/", async (req, res) => {
 
     const newDomain = new Domain({
       domain_name,
-      assessment_type_id,
       color
     });
 
@@ -59,11 +58,11 @@ router.post("/", async (req, res) => {
 // PUT update domain
 router.put("/:id", async (req, res) => {
   try {
-    const { domain_name, assessment_type_id, color } = req.body;
+    const { domain_name, color } = req.body;
 
     const updatedDomain = await Domain.findByIdAndUpdate(
       req.params.id,
-      { domain_name, assessment_type_id, color },
+      { domain_name, color },
       { new: true }
     );
 

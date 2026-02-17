@@ -7,7 +7,8 @@ import domainsRoutes from "./routes/domainsRoutes.js";
 import authRoutes from "./routes/authRoutes.js";
 import adminRoutes from "./routes/adminRoutes.js";
 import optionRoutes from "./routes/optionRoutes.js";
-//import assessmentRoutes from "./routes/assessmentRoutes.js";
+import assessmentTypeRoutes from "./routes/assessmentTypeRoutes.js";
+import assessmentAttemptsRoutes from "./routes/assessmentAttemptsRoutes.js";
 
 //import resultRoutes from "./routes/resultRoutes.js";
 
@@ -20,7 +21,8 @@ app.use(express.json());
 app.use("/api/auth", authRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/domains", domainsRoutes);
-//app.use("/api/assessment", assessmentRoutes);
+app.use("/api/assessment-types", assessmentTypeRoutes);
+app.use("/api/assessment-attempts", assessmentAttemptsRoutes);
 app.use("/api/questions", questionRoutes);
 //app.use("/api/results", resultRoutes);
 app.use("/api/options", optionRoutes);

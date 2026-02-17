@@ -5,9 +5,10 @@ import './AdminDashboard.css';
 function AdminDashboard({ onLogout }) {
   const [activeTab, setActiveTab] = useState('overview');
   const [domains, setDomains] = useState([]);
+  const [assessmentTypes, setAssessmentTypes] = useState([]);
 
   const [editingQuestion, setEditingQuestion] = useState(null);
-  const [newQuestion, setNewQuestion] = useState({ domainId: '', text: '', weight: 1 });
+  const [newQuestion, setNewQuestion] = useState({ domainId: '', assessment_type_id: '', text: '', weight: 1 });
   const [newDomain, setNewDomain] = useState({ name: '', color: '#3498db' });
   const [showAddDomain, setShowAddDomain] = useState(false);
   const [selectedDomain, setSelectedDomain] = useState(null); // For navigating to domain detail view
@@ -38,6 +39,22 @@ function AdminDashboard({ onLogout }) {
   }, [alert]);
 
   // Fetch domains from backend on mount
+  // Fetch assessment types on mount
+  useEffect(() => {
+    const fetchAssessmentTypes = async () => {
+      try {
+        const res = await fetch('http://localhost:5000/api/assessment-types');
+        if (!res.ok) throw new Error('Failed fetching assessment types');
+        const data = await res.json();
+        setAssessmentTypes(data);
+      } catch (err) {
+        console.error('Error fetching assessment types:', err);
+      }
+    };
+    fetchAssessmentTypes();
+  }, []);
+
+  // Fetch domains from backend on mount
   useEffect(() => {
     const fetchDomains = async () => {
       try {
@@ -47,12 +64,12 @@ function AdminDashboard({ onLogout }) {
 
         const mapped = await Promise.all(data.map(async (d) => {
           const domainId = d._id || d.id;
-          let questions = [];
+          let questionsData = [];
           try {
             const qRes = await fetch(`http://localhost:5000/api/questions/domain/${domainId}`);
             if (qRes.ok) {
               const qData = await qRes.json();
-              questions = await Promise.all(qData.map(async (q) => {
+              questionsData = await Promise.all(qData.map(async (q) => {
                 const qId = q._id || q.id;
                 let options = [];
                 try {
@@ -61,18 +78,47 @@ function AdminDashboard({ onLogout }) {
                 } catch (e) {
                   console.error('Failed fetching options for question', qId, e);
                 }
-                return { id: qId, text: q.question_text || q.text || '', weight: q.weight || 1, options };
+                
+                // Handle assessment_type_id - it could be an object (populated) or a string (ID)
+                let assessmentTypeId = null;
+                if (typeof q.assessment_type_id === 'object' && q.assessment_type_id !== null) {
+                  assessmentTypeId = q.assessment_type_id._id || q.assessment_type_id.id;
+                } else if (typeof q.assessment_type_id === 'string') {
+                  assessmentTypeId = q.assessment_type_id;
+                }
+                
+                return { 
+                  id: qId, 
+                  text: q.question_text || q.text || '', 
+                  weight: q.weight || 1, 
+                  assessment_type_id: assessmentTypeId,
+                  options 
+                };
               }));
             }
           } catch (e) {
             console.error('Failed fetching questions for domain', domainId, e);
           }
 
+          // Group questions by assessment type
+          const questionsByAssessment = {};
+          questionsData.forEach(q => {
+            const typeId = q.assessment_type_id;
+            // Only add if assessment_type_id exists
+            if (typeId) {
+              if (!questionsByAssessment[typeId]) {
+                questionsByAssessment[typeId] = [];
+              }
+              questionsByAssessment[typeId].push(q);
+            }
+          });
+
           return {
             id: domainId,
             name: d.domain_name || d.name,
             color: d.color || '#3498db',
-            questions
+            questions: questionsData,
+            questionsByAssessment
           };
         }));
 
@@ -83,7 +129,7 @@ function AdminDashboard({ onLogout }) {
     };
 
     fetchDomains();
-  }, []);
+  }, [assessmentTypes]);
 
   // When a domain is selected, fetch its questions from backend
   useEffect(() => {
@@ -121,11 +167,28 @@ function AdminDashboard({ onLogout }) {
     fetchQuestions();
   }, [selectedDomain]);
 
-  // Test history sorting and filtering state
-  const [sortBy, setSortBy] = useState('date'); // 'date', 'userId', 'avgScore'
-  const [sortOrder, setSortOrder] = useState('desc'); // 'asc', 'desc'
-  const [filterDomain, setFilterDomain] = useState('all');
-  const [filterStatus, setFilterStatus] = useState('all'); // 'all', 'low', 'mild', 'moderate', 'high'
+  // State for average scores
+  const [averageScores, setAverageScores] = useState({});
+
+  // Calculate average scores from test attempts
+  useEffect(() => {
+    const calculateAverages = async () => {
+      try {
+        const res = await fetch('http://localhost:5000/api/assessment-attempts/analytics/averages');
+        if (!res.ok) {
+          console.log('No assessment attempts found yet');
+          return;
+        }
+
+        const averages = await res.json();
+        setAverageScores(averages);
+      } catch (err) {
+        console.error('Error fetching assessment averages:', err);
+      }
+    };
+
+    calculateAverages();
+  }, [domains]);
 
   // Mock data for testing statistics
   const mockStats = {
@@ -194,11 +257,17 @@ function AdminDashboard({ onLogout }) {
   const handleAddQuestion = () => {
     (async () => {
       if (!newQuestion.text.trim()) return setAlert({ type: 'error', message: 'Enter question text' });
+      if (!newQuestion.assessment_type_id) return setAlert({ type: 'error', message: 'Select assessment type' });
       try {
         const res = await fetch('http://localhost:5000/api/questions', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ domain_id: newQuestion.domainId, question_text: newQuestion.text, weight: newQuestion.weight })
+          body: JSON.stringify({ 
+            domain_id: newQuestion.domainId, 
+            assessment_type_id: newQuestion.assessment_type_id,
+            question_text: newQuestion.text, 
+            weight: newQuestion.weight 
+          })
         });
 
         if (!res.ok) {
@@ -209,13 +278,26 @@ function AdminDashboard({ onLogout }) {
 
         setDomains(prev => prev.map(d => {
           if (d.id === newQuestion.domainId) {
-            const q = { id: created._id || created.id, text: created.question_text || created.text, weight: created.weight || 1, options: created.options || [] };
-            return { ...d, questions: [...d.questions, q] };
+            const q = { 
+              id: created._id || created.id, 
+              text: created.question_text || created.text, 
+              weight: created.weight || 1, 
+              assessment_type_id: created.assessment_type_id,
+              options: created.options || [] 
+            };
+            return { 
+              ...d, 
+              questions: [...d.questions, q],
+              questionsByAssessment: {
+                ...d.questionsByAssessment,
+                [created.assessment_type_id]: [...(d.questionsByAssessment?.[created.assessment_type_id] || []), q]
+              }
+            };
           }
           return d;
         }));
 
-        setNewQuestion({ domainId: '', text: '', weight: 1 });
+        setNewQuestion({ domainId: '', assessment_type_id: '', text: '', weight: 1 });
         setAlert({ type: 'success', message: 'Question added successfully' });
       } catch (err) {
         console.error('Add question error', err);
@@ -233,14 +315,40 @@ function AdminDashboard({ onLogout }) {
         if (!domain) return;
         const question = domain.questions[index];
         if (!question || !question.id) {
-          setDomains(prev => prev.map(d => d.id === domainId ? { ...d, questions: d.questions.filter((_, i) => i !== index) } : d));
+          setDomains(prev => prev.map(d => {
+            if (d.id === domainId) {
+              const updatedQuestions = d.questions.filter((_, i) => i !== index);
+              const updatedByAssessment = {};
+              Object.entries(d.questionsByAssessment || {}).forEach(([typeId, questions]) => {
+                const filtered = questions.filter((_, i) => i !== index);
+                if (filtered.length > 0) {
+                  updatedByAssessment[typeId] = filtered;
+                }
+              });
+              return { ...d, questions: updatedQuestions, questionsByAssessment: updatedByAssessment };
+            }
+            return d;
+          }));
           return;
         }
 
         const res = await fetch(`http://localhost:5000/api/questions/${question.id}`, { method: 'DELETE' });
         if (!res.ok) throw new Error('Failed to delete question');
 
-        setDomains(prev => prev.map(d => d.id === domainId ? { ...d, questions: d.questions.filter(q => q.id !== question.id) } : d));
+        setDomains(prev => prev.map(d => {
+          if (d.id === domainId) {
+            const updatedQuestions = d.questions.filter(q => q.id !== question.id);
+            const updatedByAssessment = {};
+            Object.entries(d.questionsByAssessment || {}).forEach(([typeId, questions]) => {
+              const filtered = questions.filter(q => q.id !== question.id);
+              if (filtered.length > 0) {
+                updatedByAssessment[typeId] = filtered;
+              }
+            });
+            return { ...d, questions: updatedQuestions, questionsByAssessment: updatedByAssessment };
+          }
+          return d;
+        }));
         setAlert({ type: 'success', message: 'Question deleted successfully' });
       } catch (err) {
         console.error('Delete question error', err);
@@ -252,18 +360,29 @@ function AdminDashboard({ onLogout }) {
   const handleAddDomain = () => {
     (async () => {
       if (!newDomain.name.trim()) return setAlert({ type: 'error', message: 'Enter domain name' });
+      
       try {
         const res = await fetch('http://localhost:5000/api/domains', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ domain_name: newDomain.name, color: newDomain.color })
+          body: JSON.stringify({ 
+            domain_name: newDomain.name, 
+            color: newDomain.color
+          })
         });
         if (!res.ok) {
           const error = await res.json();
           return setAlert({ type: 'error', message: error.error || 'Failed to create domain' });
         }
         const created = await res.json();
-        const d = { id: created._id || created.id, name: created.domain_name || created.name || newDomain.name, color: created.color || newDomain.color, questions: [] };
+        
+        const d = { 
+          id: created._id || created.id, 
+          name: created.domain_name || created.name || newDomain.name, 
+          color: created.color || newDomain.color,
+          questions: [],
+          questionsByAssessment: {}
+        };
         setDomains(prev => [...prev, d]);
         setNewDomain({ name: '', color: '#3498db' });
         setShowAddDomain(false);
@@ -293,6 +412,11 @@ function AdminDashboard({ onLogout }) {
 
   const calculateMaxScore = (domain) => {
     return domain.questions.reduce((sum, q) => sum + (q.weight * 4), 0);
+  };
+
+  const calculateMaxScoreByAssessmentType = (domain, assessmentTypeId) => {
+    const questionsForType = (domain.questionsByAssessment?.[assessmentTypeId] || []);
+    return questionsForType.reduce((sum, q) => sum + (q.weight * 4), 0);
   };
 
   const getScoreLevel = (percentage) => {
@@ -438,21 +562,40 @@ function AdminDashboard({ onLogout }) {
         </div>
       </div>
 
-      <h3 className="subsection-title">Average Scores by Domain</h3>
-      <div className="scores-grid">
+      <h3 className="subsection-title">Average Scores by Domain & Assessment Type</h3>
+      <div className="scores-grid-container">
         {domains.map((domain) => {
-          const maxScore = calculateMaxScore(domain);
-          const avgScore = mockStats[`avg${domain.name.replace(/\s+/g, '')}Score`] || 0;
-          const percentage = maxScore > 0 ? (avgScore / maxScore) * 100 : 0;
+          const hasQuestions = assessmentTypes.some(type => {
+            const maxScore = calculateMaxScoreByAssessmentType(domain, type._id);
+            return maxScore > 0;
+          });
+          
+          if (!hasQuestions) return null;
           
           return (
-            <div key={domain.id} className="score-item">
-              <span className="score-label">{domain.name}</span>
-              <span className="score-value">{avgScore.toFixed(1)}/{maxScore}</span>
-              <div className="score-bar">
-                <div className="score-fill" style={{ width: `${percentage}%`, background: domain.color }}></div>
+            <div key={domain.id} className="domain-score-group">
+              <h4 className="domain-score-title" style={{ color: domain.color }}>{domain.name}</h4>
+              <div className="assessment-scores">
+                {assessmentTypes.map(type => {
+                  const maxScore = calculateMaxScoreByAssessmentType(domain, type._id);
+                  if (maxScore === 0) return null;
+                  
+                  // Get average score from fetched data
+                  const scoreKey = `${domain.id}-${type._id}`;
+                  const avgScore = averageScores[scoreKey] || 0;
+                  const percentage = maxScore > 0 ? (avgScore / maxScore) * 100 : 0;
+                  
+                  return (
+                    <div key={type._id} className="score-item assessment-score-item">
+                      <span className="score-label">{type.name}</span>
+                      <span className="score-value">{avgScore.toFixed(1)}/{maxScore}</span>
+                      <div className="score-bar">
+                        <div className="score-fill" style={{ width: `${percentage}%`, background: domain.color }}></div>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
-              <span className="score-sublabel">{domain.questions.length} questions</span>
             </div>
           );
         })}
@@ -501,59 +644,79 @@ function AdminDashboard({ onLogout }) {
             <div className="domain-stat">
               <strong>{domain.questions.length}</strong> Questions
             </div>
-            <div className="domain-stat">
-              <strong>{calculateMaxScore(domain)}</strong> Max Score
-            </div>
+            {assessmentTypes.map(type => {
+              const maxScore = calculateMaxScoreByAssessmentType(domain, type._id);
+              if (maxScore === 0) return null;
+              return (
+                <div key={type._id} className="domain-stat assessment-detail-stat">
+                  <span><strong>{maxScore}</strong> Max Score ({type.name})</span>
+                </div>
+              );
+            })}
           </div>
 
           <div className="questions-list">
-            {domain.questions.map((question, index) => {
-              const questionKey = `${domain.id}-${index}`;
-              const isExpanded = expandedQuestion === questionKey;
-              const options = getQuestionOptions(domain.id, index);
+            {Object.entries(domain.questionsByAssessment || {}).map(([assessmentTypeId, questions]) => {
+              // Skip 'unknown' assessment types
+              if (assessmentTypeId === 'unknown') return null;
+              const assessmentType = assessmentTypes.find(t => t._id === assessmentTypeId);
+              // Skip if assessment type not found
+              if (!assessmentType) return null;
+              const assessmentTypeName = assessmentType?.name || 'Unknown';
               
               return (
-                <div key={index} className={`question-item ${isExpanded ? 'question-item-expanded' : ''}`}>
-                  {editingQuestion?.domainId === domain.id && editingQuestion?.index === index ? (
-                    <div className="question-edit">
-                      <textarea
-                        value={editingQuestion.text}
-                        onChange={(e) => setEditingQuestion({ ...editingQuestion, text: e.target.value })}
-                        className="question-textarea"
-                        placeholder="Question text"
-                      />
-                      <div className="weight-input-group">
-                        <label>Weightage:</label>
-                        <input
-                          type="number"
-                          step="0.25"
-                          min="0"
-                          value={editingQuestion.weight}
-                          onChange={(e) => setEditingQuestion({ ...editingQuestion, weight: e.target.value })}
-                          className="weight-input"
-                        />
-                      </div>
-                      <div className="question-actions">
-                        <button className="btn-save" onClick={handleSaveQuestion}>Save</button>
-                        <button className="btn-cancel" onClick={() => setEditingQuestion(null)}>Cancel</button>
-                      </div>
-                    </div>
-                  ) : (
-                    <>
-                      <div className="question-main-row" onClick={() => toggleQuestionExpand(domain.id, index)} style={{ cursor: 'pointer' }}>
-                        <span className="question-number">Q{index + 1}</span>
-                        <span className="question-text">{question.text}</span>
-                        <span className="question-weight" title="Weight multiplier">×{question.weight}</span>
-                        <span className="expand-icon">{isExpanded ? '▼' : '▶'}</span>
-                      </div>
-                      <div className="question-controls" onClick={(e) => e.stopPropagation()}>
-                        <button className="btn-edit" onClick={() => handleEditQuestion(domain.id, index)}>
-                          <FaEdit />
-                        </button>
-                        <button className="btn-delete" onClick={() => handleDeleteQuestion(domain.id, index)}>
-                          <FaTrash />
-                        </button>
-                      </div>
+                <div key={assessmentTypeId} className="assessment-group">
+                  <h4 className="assessment-group-title">{assessmentTypeName} Assessment</h4>
+                  <div className="assessment-questions">
+                    {questions.map((question, qIndex) => {
+                      // Find the original index in domain.questions
+                      const originalIndex = domain.questions.findIndex(q => q.id === question.id);
+                      const questionKey = `${domain.id}-${originalIndex}`;
+                      const isExpanded = expandedQuestion === questionKey;
+                      const options = getQuestionOptions(domain.id, originalIndex);
+                      
+                      return (
+                        <div key={question.id} className={`question-item ${isExpanded ? 'question-item-expanded' : ''}`}>
+                          {editingQuestion?.domainId === domain.id && editingQuestion?.index === originalIndex ? (
+                            <div className="question-edit">
+                              <textarea
+                                value={editingQuestion.text}
+                                onChange={(e) => setEditingQuestion({ ...editingQuestion, text: e.target.value })}
+                                className="question-textarea"
+                                placeholder="Question text"
+                              />
+                              <div className="weight-input-group">
+                                <label>Weightage:</label>
+                                <input
+                                  type="number"
+                                  step="0.25"
+                                  min="0"
+                                  value={editingQuestion.weight}
+                                  onChange={(e) => setEditingQuestion({ ...editingQuestion, weight: e.target.value })}
+                                  className="weight-input"
+                                />
+                              </div>
+                              <div className="question-actions">
+                                <button className="btn-save" onClick={handleSaveQuestion}>Save</button>
+                                <button className="btn-cancel" onClick={() => setEditingQuestion(null)}>Cancel</button>
+                              </div>
+                            </div>
+                          ) : (
+                            <>
+                              <div className="question-main-row" onClick={() => toggleQuestionExpand(domain.id, originalIndex)} style={{ cursor: 'pointer' }}>
+                                <span className="question-number">Q{qIndex + 1}</span>
+                                <span className="question-text">{question.text}</span>
+                                <span className="question-weight" title="Weight multiplier">×{question.weight}</span>
+                                <span className="expand-icon">{isExpanded ? '▼' : '▶'}</span>
+                              </div>
+                              <div className="question-controls" onClick={(e) => e.stopPropagation()}>
+                                <button className="btn-edit" onClick={() => handleEditQuestion(domain.id, originalIndex)}>
+                                  <FaEdit />
+                                </button>
+                                <button className="btn-delete" onClick={() => handleDeleteQuestion(domain.id, originalIndex)}>
+                                  <FaTrash />
+                                </button>
+                              </div>
                       
                       {isExpanded && (
                         <div className="question-options-container">
@@ -594,7 +757,7 @@ function AdminDashboard({ onLogout }) {
                             />
                             <button 
                               className="btn-add-option" 
-                              onClick={() => handleAddOption(domain.id, index)}
+                              onClick={() => handleAddOption(domain.id, originalIndex)}
                             >
                               <FaPlus /> Add Option
                             </button>
@@ -603,6 +766,10 @@ function AdminDashboard({ onLogout }) {
                       )}
                     </>
                   )}
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
               );
             })}
@@ -611,6 +778,18 @@ function AdminDashboard({ onLogout }) {
           <div className="add-question-section-inline">
             <h3 className="subsection-title">Add New Question to {domain.name}</h3>
             <div className="add-question-form">
+              <select
+                value={newQuestion.domainId === domain.id ? newQuestion.assessment_type_id : ''}
+                onChange={(e) => setNewQuestion({ ...newQuestion, domainId: domain.id, assessment_type_id: e.target.value })}
+                className="assessment-type-select"
+              >
+                <option value="">Select Assessment Type</option>
+                {assessmentTypes.map((type) => (
+                  <option key={type._id} value={type._id}>
+                    {type.name}
+                  </option>
+                ))}
+              </select>
               <textarea
                 value={newQuestion.domainId === domain.id ? newQuestion.text : ''}
                 onChange={(e) => setNewQuestion({ ...newQuestion, domainId: domain.id, text: e.target.value })}
@@ -632,7 +811,7 @@ function AdminDashboard({ onLogout }) {
               <button className="btn btn-primary" onClick={() => {
                 if (newQuestion.text.trim()) {
                   handleAddQuestion();
-                  setNewQuestion({ domainId: domain.id, text: '', weight: 1 });
+                  setNewQuestion({ domainId: domain.id, assessment_type_id: '', text: '', weight: 1 });
                 }
               }}>
                 <FaPlus /> Add Question
@@ -693,10 +872,16 @@ function AdminDashboard({ onLogout }) {
                   <FaQuestionCircle style={{ color: domain.color }} />
                   <span><strong>{domain.questions.length}</strong> Questions</span>
                 </div>
-                <div className="domain-card-stat">
-                  <FaCalculator style={{ color: domain.color }} />
-                  <span><strong>{calculateMaxScore(domain)}</strong> Max Score</span>
-                </div>
+                {assessmentTypes.map(type => {
+                  const maxScore = calculateMaxScoreByAssessmentType(domain, type._id);
+                  if (maxScore === 0) return null;
+                  return (
+                    <div key={type._id} className="domain-card-stat assessment-stat">
+                      <FaCalculator style={{ color: domain.color }} />
+                      <span><strong>{maxScore}</strong> Max ({type.name})</span>
+                    </div>
+                  );
+                })}
               </div>
               <div className="domain-card-footer">
                 <span className="domain-card-link" style={{ color: domain.color }}>
