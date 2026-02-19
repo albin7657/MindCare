@@ -10,7 +10,8 @@ const AttemptSchema = new mongoose.Schema({
     ref: "AssessmentType"
   },
   attempt_date: { type: Date, default: Date.now },
-  status: String
+  status: String,
+  raw_answers: { type: Object }
 });
 
 export default mongoose.model("AssessmentAttempt", AttemptSchema);

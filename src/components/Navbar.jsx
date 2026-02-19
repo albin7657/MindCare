@@ -2,18 +2,30 @@ import { useState } from 'react';
 import { FaBars, FaTimes } from 'react-icons/fa';
 import './Navbar.css';
 
-function Navbar({ currentPage, setCurrentPage }) {
+function Navbar({ currentPage, setCurrentPage, currentUser, onLogout }) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const navItems = [
     { id: 'home', label: 'Home' },
     { id: 'tests', label: 'Tests' },
     { id: 'about', label: 'About' },
-    { id: 'contact', label: 'Contact' },
-    { id: 'login', label: 'Login' }
+    { id: 'contact', label: 'Contact' }
   ];
 
+  // Add auth action depending on current user
+  if (currentUser) {
+    navItems.push({ id: 'logout', label: 'Logout' });
+  } else {
+    navItems.push({ id: 'login', label: 'Login' });
+  }
+
   const handleNavClick = (pageId) => {
+    if (pageId === 'logout') {
+      if (typeof onLogout === 'function') onLogout();
+      setCurrentPage('home');
+      setIsMenuOpen(false);
+      return;
+    }
     setCurrentPage(pageId);
     setIsMenuOpen(false);
   };

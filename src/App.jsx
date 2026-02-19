@@ -15,6 +15,21 @@ function App() {
   const [currentPage, setCurrentPage] = useState('home');
   const [quizResults, setQuizResults] = useState(null);
   const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(false);
+  const [currentUser, setCurrentUser] = useState(null);
+
+  const saveAttemptToServer = async (results) => {
+    try {
+      const res = await fetch('http://localhost:5000/api/assessment-attempts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user: currentUser, answers: results })
+      });
+      return await res.json();
+    } catch (err) {
+      console.error('Error saving attempt:', err);
+      return null;
+    }
+  };
 
   const renderPage = () => {
     switch(currentPage) {
@@ -25,13 +40,15 @@ function App() {
       case 'test-selection':
         return <TestSelection onStartCombinedTest={() => setCurrentPage('questionnaire')} />;
       case 'questionnaire':
-        return <Questionnaire onComplete={(results) => {
+        return <Questionnaire onComplete={async (results) => {
           setQuizResults(results);
+          await saveAttemptToServer(results);
           setCurrentPage('results');
         }} onBack={() => setCurrentPage('home')} />;
       case 'tests':
-        return <Questionnaire onComplete={(results) => {
+        return <Questionnaire onComplete={async (results) => {
           setQuizResults(results);
+          await saveAttemptToServer(results);
           setCurrentPage('results');
         }} onBack={() => setCurrentPage('home')} />;
       case 'about':
@@ -39,7 +56,7 @@ function App() {
       case 'contact':
         return <Contact />;
       case 'login':
-        return <Login onNavigate={setCurrentPage} />;
+        return <Login onNavigate={setCurrentPage} onAuth={setCurrentUser} />;
       case 'admin-login':
         return <AdminLogin onLogin={() => {
           setIsAdminAuthenticated(true);
@@ -64,10 +81,15 @@ function App() {
     }
   };
 
+  const handleLogout = () => {
+    setCurrentUser(null);
+    setCurrentPage('home');
+  };
+
   return (
     <div className="app">
       {currentPage !== 'admin-dashboard' && currentPage !== 'admin-login' && (
-        <Navbar currentPage={currentPage} setCurrentPage={setCurrentPage} />
+        <Navbar currentPage={currentPage} setCurrentPage={setCurrentPage} currentUser={currentUser} onLogout={handleLogout} />
       )}
       <main className={`main-content ${
         currentPage !== 'home' && 

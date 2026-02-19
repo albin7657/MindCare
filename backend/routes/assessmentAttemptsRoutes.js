@@ -2,6 +2,7 @@ import express from "express";
 import AssessmentAttempt from "../models/AssessementAttempt.js";
 import Answer from "../models/Answer.js";
 import Question from "../models/Question.js";
+import Student from "../models/Student.js";
 
 const router = express.Router();
 
@@ -51,6 +52,8 @@ router.get("/", async (req, res) => {
   }
 });
 
+export default router;
+
 // Get average scores by domain and assessment type
 router.get("/analytics/averages", async (req, res) => {
   try {
@@ -97,4 +100,36 @@ router.get("/analytics/averages", async (req, res) => {
   }
 });
 
-export default router;
+
+
+// Create a new assessment attempt (handles guest and signed-in users)
+router.post("/", async (req, res) => {
+  try {
+    const { user, answers, assessment_type_id } = req.body;
+
+    let studentId;
+    if (user && user._id) {
+      studentId = user._id;
+    } else {
+      const rand = Math.floor(100000 + Math.random() * 900000);
+      const guestName = `user_${rand}`;
+      const student = new Student({ name: guestName });
+      await student.save();
+      studentId = student._id;
+    }
+
+    const attempt = new AssessmentAttempt({
+      student_id: studentId,
+      assessment_type_id: assessment_type_id || null,
+      status: "completed",
+      raw_answers: answers || {}
+    });
+
+    await attempt.save();
+
+    res.json({ success: true, attempt });
+  } catch (err) {
+    console.error('Error creating assessment attempt:', err);
+    res.status(500).json({ error: 'Error creating assessment attempt' });
+  }
+});

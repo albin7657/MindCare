@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import './Login.css';
 
-function Login({ onNavigate }) {
+function Login({ onNavigate, onAuth }) {
   const [isSignUp, setIsSignUp] = useState(false);
   const [formData, setFormData] = useState({
     email: '',
@@ -9,6 +9,8 @@ function Login({ onNavigate }) {
     confirmPassword: '',
     name: ''
   });
+  const [message, setMessage] = useState(null);
+  const [error, setError] = useState(null);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -20,8 +22,65 @@ function Login({ onNavigate }) {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    // Add your authentication logic here
-    console.log('Form submitted:', formData);
+    setError(null);
+    setMessage(null);
+
+    const doAuth = async () => {
+      try {
+        if (isSignUp) {
+          // Register
+          const res = await fetch('http://localhost:5000/api/auth/register', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name: formData.name, email: formData.email, password: formData.password })
+          });
+          const data = await res.json();
+          if (res.ok) {
+            setMessage('Registration successful — you are now signed in');
+            // try to log in automatically
+            const loginRes = await fetch('http://localhost:5000/api/auth/login', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ email: formData.email, password: formData.password })
+            });
+            const user = await loginRes.json();
+            if (loginRes.ok && onAuth) onAuth(user);
+            setTimeout(() => {
+              setMessage(null);
+              onNavigate('home');
+            }, 1000);
+          } else {
+            setError(data.message || JSON.stringify(data));
+            setTimeout(() => setError(null), 4000);
+          }
+        } else {
+          // Login
+          const res = await fetch('http://localhost:5000/api/auth/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: formData.email, password: formData.password })
+          });
+          const user = await res.json();
+          if (res.ok && onAuth) {
+            setMessage('Login successful');
+            onAuth(user);
+            setTimeout(() => {
+              setMessage(null);
+              onNavigate('home');
+            }, 900);
+          } else {
+            setError(user || 'Login failed');
+            setTimeout(() => setError(null), 4000);
+          }
+        }
+      } catch (err) {
+        console.error('Auth error', err);
+        setError('Authentication error');
+        setTimeout(() => setError(null), 4000);
+      }
+    };
+
+    doAuth();
   };
 
   return (
@@ -37,6 +96,16 @@ function Login({ onNavigate }) {
         </div>
 
         <form className="login-form" onSubmit={handleSubmit}>
+          {message && (
+            <div className="login-toast success" style={{background:'#d4edda',color:'#155724',padding:'10px',borderRadius:6,marginBottom:12}}>
+              {message}
+            </div>
+          )}
+          {error && (
+            <div className="login-toast error" style={{background:'#fdecea',color:'#721c24',padding:'10px',borderRadius:6,marginBottom:12}}>
+              {error}
+            </div>
+          )}
           {isSignUp && (
             <div className="form-group">
               <label htmlFor="name">Full Name</label>
