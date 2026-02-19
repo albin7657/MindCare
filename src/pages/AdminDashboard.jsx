@@ -24,8 +24,85 @@ function AdminDashboard({ onLogout }) {
   });
   const [editingThresholds, setEditingThresholds] = useState(false);
   
-  // Test history (empty by default)
-  const [testHistory, setTestHistory] = useState([]);
+  // Mock data for test history with hardcoded details
+  const [testHistory, setTestHistory] = useState([
+    {
+      id: 1,
+      date: '2026-02-05 14:30',
+      userId: 'User_7821',
+      domains: ['Stress', 'Anxiety', 'Depression'],
+      scores: { stress: 75, anxiety: 68, depression: 45 }
+    },
+    {
+      id: 2,
+      date: '2026-02-05 13:15',
+      userId: 'User_4392',
+      domains: ['Burnout', 'Sleep Quality'],
+      scores: { burnout: 82, sleep: 71 }
+    },
+    {
+      id: 3,
+      date: '2026-02-05 11:45',
+      userId: 'User_9153',
+      domains: ['Stress', 'Anxiety', 'Depression', 'Burnout', 'Sleep Quality'],
+      scores: { stress: 34, anxiety: 41, depression: 29, burnout: 38, sleep: 52 }
+    },
+    {
+      id: 4,
+      date: '2026-02-05 10:20',
+      userId: 'User_2764',
+      domains: ['Depression', 'Sleep Quality'],
+      scores: { depression: 88, sleep: 79 }
+    },
+    {
+      id: 5,
+      date: '2026-02-05 09:00',
+      userId: 'User_5418',
+      domains: ['Stress', 'Anxiety'],
+      scores: { stress: 22, anxiety: 18 }
+    },
+    {
+      id: 6,
+      date: '2026-02-04 16:30',
+      userId: 'User_6127',
+      domains: ['Burnout'],
+      scores: { burnout: 91 }
+    },
+    {
+      id: 7,
+      date: '2026-02-04 15:10',
+      userId: 'User_8839',
+      domains: ['Stress', 'Anxiety', 'Depression', 'Burnout'],
+      scores: { stress: 56, anxiety: 63, depression: 48, burnout: 67 }
+    },
+    {
+      id: 8,
+      date: '2026-02-04 13:45',
+      userId: 'User_1205',
+      domains: ['Sleep Quality'],
+      scores: { sleep: 33 }
+    },
+    {
+      id: 9,
+      date: '2026-02-04 11:20',
+      userId: 'User_7492',
+      domains: ['Stress', 'Depression'],
+      scores: { stress: 44, depression: 51 }
+    },
+    {
+      id: 10,
+      date: '2026-02-04 09:15',
+      userId: 'User_3681',
+      domains: ['Anxiety', 'Burnout', 'Sleep Quality'],
+      scores: { anxiety: 77, burnout: 70, sleep: 65 }
+    }
+  ]);
+
+  // Test history sorting and filtering state
+  const [sortBy, setSortBy] = useState('date'); // 'date', 'userId', 'avgScore'
+  const [sortOrder, setSortOrder] = useState('desc'); // 'asc', 'desc'
+  const [filterDomain, setFilterDomain] = useState('all');
+  const [filterStatus, setFilterStatus] = useState('all'); // 'all', 'low', 'mild', 'moderate', 'high'
 
   // Alert management
   const [alert, setAlert] = useState(null);
