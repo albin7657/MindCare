@@ -15,6 +15,7 @@ const QuestionSchema = new mongoose.Schema({
     type: String,
     required: true
   },
+  // optional weight multiplier used in scoring, default is 1
   weight: {
     type: Number,
     default: 1

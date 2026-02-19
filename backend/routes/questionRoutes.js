@@ -26,9 +26,11 @@ router.post("/", async (req, res) => {
       return res.status(400).json({ error: "This question already exists in this domain for this assessment type" });
     }
 
-    const question = await Question.create(req.body);
+    // allow weight to be specified but default to 1
+    const question = await Question.create({ domain_id, assessment_type_id, question_text, weight: weight || 1 });
     res.json(question);
   } catch (err) {
+    console.error('Question creation error', err);
     res.status(500).json("Error creating question");
   }
 });

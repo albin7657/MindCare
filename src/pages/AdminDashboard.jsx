@@ -8,7 +8,8 @@ function AdminDashboard({ onLogout }) {
   const [assessmentTypes, setAssessmentTypes] = useState([]);
 
   const [editingQuestion, setEditingQuestion] = useState(null);
-  const [newQuestion, setNewQuestion] = useState({ domainId: '', assessment_type_id: '', text: '', weight: 1 });
+  // weight is fixed at 1, no input provided
+  const [newQuestion, setNewQuestion] = useState({ domainId: '', assessment_type_id: '', text: '' });
   const [newDomain, setNewDomain] = useState({ name: '', color: '#3498db' });
   const [showAddDomain, setShowAddDomain] = useState(false);
   const [selectedDomain, setSelectedDomain] = useState(null); // For navigating to domain detail view
@@ -285,15 +286,15 @@ function AdminDashboard({ onLogout }) {
     setEditingQuestion({ 
       domainId, 
       index, 
-      text: domain.questions[index].text,
-      weight: domain.questions[index].weight
+      text: domain.questions[index].text
+      // weight is fixed, no need to store
     });
   };
 
   const handleSaveQuestion = () => {
     (async () => {
       if (!editingQuestion) return;
-      const { domainId, index, text, weight } = editingQuestion;
+      const { domainId, index, text } = editingQuestion;
       try {
         const domain = domains.find(d => d.id === domainId);
         const q = domain?.questions?.[index];
@@ -301,14 +302,14 @@ function AdminDashboard({ onLogout }) {
           const res = await fetch(`http://localhost:5000/api/questions/${q.id}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ question_text: text, weight: parseFloat(weight) || 1 })
+            body: JSON.stringify({ question_text: text })
           });
           if (!res.ok) throw new Error('Failed to update question');
           const updated = await res.json();
           setDomains(prev => prev.map(d => {
             if (d.id === domainId) {
               const updatedQuestions = [...d.questions];
-              updatedQuestions[index] = { ...updatedQuestions[index], id: updated._id || updated.id, text: updated.question_text || text, weight: updated.weight || parseFloat(weight) || 1 };
+              updatedQuestions[index] = { ...updatedQuestions[index], id: updated._id || updated.id, text: updated.question_text || text, weight: 1 };
               return { ...d, questions: updatedQuestions };
             }
             return d;
@@ -317,7 +318,7 @@ function AdminDashboard({ onLogout }) {
           setDomains(prev => prev.map(d => {
             if (d.id === domainId) {
               const updatedQuestions = [...d.questions];
-              updatedQuestions[index] = { text, weight: parseFloat(weight) || 1 };
+              updatedQuestions[index] = { text, weight: 1 };
               return { ...d, questions: updatedQuestions };
             }
             return d;
@@ -333,6 +334,7 @@ function AdminDashboard({ onLogout }) {
 
   const handleAddQuestion = () => {
     (async () => {
+      if (!newQuestion.domainId) return setAlert({ type: 'error', message: 'Domain is not set' });
       if (!newQuestion.text.trim()) return setAlert({ type: 'error', message: 'Enter question text' });
       if (!newQuestion.assessment_type_id) return setAlert({ type: 'error', message: 'Select assessment type' });
       try {
@@ -343,15 +345,18 @@ function AdminDashboard({ onLogout }) {
             domain_id: newQuestion.domainId, 
             assessment_type_id: newQuestion.assessment_type_id,
             question_text: newQuestion.text, 
-            weight: newQuestion.weight 
+            weight: 1 // fixed default weight
           })
         });
 
         if (!res.ok) {
           const error = await res.json();
+          console.error('Create question response error:', error);
           return setAlert({ type: 'error', message: error.error || 'Failed to create question' });
         }
         const created = await res.json();
+
+        console.log('Question created on server:', created);
 
         setDomains(prev => prev.map(d => {
           if (d.id === newQuestion.domainId) {
@@ -374,7 +379,7 @@ function AdminDashboard({ onLogout }) {
           return d;
         }));
 
-        setNewQuestion({ domainId: '', assessment_type_id: '', text: '', weight: 1 });
+        setNewQuestion({ domainId: '', assessment_type_id: '', text: '' });
         setAlert({ type: 'success', message: 'Question added successfully' });
       } catch (err) {
         console.error('Add question error', err);
@@ -762,17 +767,8 @@ function AdminDashboard({ onLogout }) {
                                 className="question-textarea"
                                 placeholder="Question text"
                               />
-                              <div className="weight-input-group">
-                                <label>Weightage:</label>
-                                <input
-                                  type="number"
-                                  step="0.25"
-                                  min="0"
-                                  value={editingQuestion.weight}
-                                  onChange={(e) => setEditingQuestion({ ...editingQuestion, weight: e.target.value })}
-                                  className="weight-input"
-                                />
-                              </div>
+                              {/* weight is fixed at 1, not editable */}
+                              {/* removed weight input per requirement */}
                               <div className="question-actions">
                                 <button className="btn-save" onClick={handleSaveQuestion}>Save</button>
                                 <button className="btn-cancel" onClick={() => setEditingQuestion(null)}>Cancel</button>
@@ -783,7 +779,7 @@ function AdminDashboard({ onLogout }) {
                               <div className="question-main-row" onClick={() => toggleQuestionExpand(domain.id, originalIndex)} style={{ cursor: 'pointer' }}>
                                 <span className="question-number">Q{qIndex + 1}</span>
                                 <span className="question-text">{question.text}</span>
-                                <span className="question-weight" title="Weight multiplier">×{question.weight}</span>
+                                {/* weight multiplier intentionally hidden - fixed at 1 */}
                                 <span className="expand-icon">{isExpanded ? '▼' : '▶'}</span>
                               </div>
                               <div className="question-controls" onClick={(e) => e.stopPropagation()}>
@@ -808,7 +804,7 @@ function AdminDashboard({ onLogout }) {
                                 <span className="option-label-display">{option.option_text || option.label || ''}</span>
                                 <button 
                                   className="btn-option-delete" 
-                                  onClick={() => handleDeleteOption(domain.id, index, option._id || option.id)}
+                                  onClick={() => handleDeleteOption(domain.id, originalIndex, option._id || option.id)}
                                   title="Delete option"
                                 >
                                   <FaTrash />
@@ -873,24 +869,15 @@ function AdminDashboard({ onLogout }) {
                 placeholder="Enter new question text..."
                 className="question-textarea"
               />
-              <div className="weight-input-group">
-                <label>Weightage:</label>
-                <input
-                  type="number"
-                  step="0.25"
-                  min="0"
-                  value={newQuestion.domainId === domain.id ? newQuestion.weight : 1}
-                  onChange={(e) => setNewQuestion({ ...newQuestion, domainId: domain.id, weight: e.target.value })}
-                  className="weight-input"
-                />
-                <span className="weight-help">Max contribution: {((newQuestion.domainId === domain.id ? newQuestion.weight : 1) * 4).toFixed(1)} points</span>
-              </div>
-              <button className="btn btn-primary" onClick={() => {
-                if (newQuestion.text.trim()) {
+              {/* weight input removed - questions will use default weight of 1 */}
+              <button
+                className="btn btn-primary"
+                onClick={() => {
                   handleAddQuestion();
-                  setNewQuestion({ domainId: domain.id, assessment_type_id: '', text: '', weight: 1 });
-                }
-              }}>
+                  setNewQuestion({ domainId: domain.id, assessment_type_id: '', text: '' });
+                }}
+                disabled={!(newQuestion.text.trim() && newQuestion.assessment_type_id)}
+              >
                 <FaPlus /> Add Question
               </button>
             </div>

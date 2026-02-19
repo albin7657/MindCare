@@ -11,11 +11,9 @@ export const calculateScores = (answers) => {
     if(!domainScores[domain])
       domainScores[domain] = 0;
 
-    domainScores[domain] +=
-      (a.points_awarded * a.question_id.weight);
+    domainScores[domain] += a.points_awarded;
 
-    totalScore +=
-      (a.points_awarded * a.question_id.weight);
+    totalScore += a.points_awarded;
   });
 
   return { domainScores, totalScore };
