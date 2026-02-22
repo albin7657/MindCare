@@ -1,9 +1,10 @@
-import { useState } from 'react';
-import { FaUsers, FaChartBar, FaQuestionCircle, FaCog, FaSignOutAlt, FaPlus, FaTrash, FaEdit, FaHistory, FaCalculator, FaChevronDown, FaArrowLeft } from 'react-icons/fa';
+import { useEffect, useState } from 'react';
+import { FaUsers, FaChartBar, FaQuestionCircle, FaCog, FaSignOutAlt, FaPlus, FaTrash, FaEdit, FaHistory, FaCalculator, FaChevronDown, FaArrowLeft, FaBars, FaTimes } from 'react-icons/fa';
 import './AdminDashboard.css';
 
 function AdminDashboard({ onLogout }) {
   const [activeTab, setActiveTab] = useState('overview');
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [domains, setDomains] = useState([
     {
       id: 'stress',
@@ -208,6 +209,22 @@ function AdminDashboard({ onLogout }) {
   const [sortOrder, setSortOrder] = useState('desc'); // 'asc', 'desc'
   const [filterDomain, setFilterDomain] = useState('all');
   const [filterStatus, setFilterStatus] = useState('all'); // 'all', 'low', 'mild', 'moderate', 'high'
+
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth > 768) {
+        setIsMobileMenuOpen(false);
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  const handleTabChange = (tab) => {
+    setActiveTab(tab);
+    setIsMobileMenuOpen(false);
+  };
 
   // Mock data for testing statistics
   const mockStats = {
@@ -1027,7 +1044,14 @@ function AdminDashboard({ onLogout }) {
 
   return (
     <div className="admin-dashboard">
-      <div className="admin-sidebar">
+      <button
+        type="button"
+        className={`admin-sidebar-backdrop ${isMobileMenuOpen ? 'visible' : ''}`}
+        aria-label="Close menu"
+        onClick={() => setIsMobileMenuOpen(false)}
+      />
+
+      <div className={`admin-sidebar ${isMobileMenuOpen ? 'mobile-open' : ''}`}>
         <div className="admin-brand">
           <h2>MindCare Admin</h2>
         </div>
@@ -1035,25 +1059,25 @@ function AdminDashboard({ onLogout }) {
         <nav className="admin-nav">
           <button 
             className={`nav-item ${activeTab === 'overview' ? 'active' : ''}`}
-            onClick={() => setActiveTab('overview')}
+            onClick={() => handleTabChange('overview')}
           >
             <FaChartBar /> Dashboard
           </button>
           <button 
             className={`nav-item ${activeTab === 'history' ? 'active' : ''}`}
-            onClick={() => setActiveTab('history')}
+            onClick={() => handleTabChange('history')}
           >
             <FaHistory /> Test History
           </button>
           <button 
             className={`nav-item ${activeTab === 'questions' ? 'active' : ''}`}
-            onClick={() => setActiveTab('questions')}
+            onClick={() => handleTabChange('questions')}
           >
             <FaQuestionCircle /> Questions
           </button>
           <button 
             className={`nav-item ${activeTab === 'scoring' ? 'active' : ''}`}
-            onClick={() => setActiveTab('scoring')}
+            onClick={() => handleTabChange('scoring')}
           >
             <FaCalculator /> Scoring Logic
           </button>
@@ -1065,6 +1089,17 @@ function AdminDashboard({ onLogout }) {
       </div>
 
       <div className="admin-main">
+        <div className="admin-mobile-topbar">
+          <button
+            type="button"
+            className="admin-menu-toggle"
+            onClick={() => setIsMobileMenuOpen((prev) => !prev)}
+            aria-label="Toggle admin menu"
+          >
+            {isMobileMenuOpen ? <FaTimes /> : <FaBars />}
+          </button>
+          <h3>Admin Panel</h3>
+        </div>
         <div className="admin-content">
           {activeTab === 'overview' && renderOverview()}
           {activeTab === 'history' && renderTestHistory()}

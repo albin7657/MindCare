@@ -2,6 +2,7 @@ import { useState } from 'react';
 import Navbar from './components/Navbar';
 import Home from './pages/Home';
 import Home2 from './pages/Home2';
+import About from './pages/About';
 import TestSelection from './pages/TestSelection';
 import Questionnaire from './pages/Questionnaire';
 import Contact from './pages/Contact';
@@ -19,23 +20,29 @@ function App() {
   const renderPage = () => {
     switch(currentPage) {
       case 'home':
-        return <Home onStartTest={() => setCurrentPage('questionnaire')} onNavigate={setCurrentPage} />;
+        return <Home onStartTest={() => setCurrentPage('test-selection')} onNavigate={setCurrentPage} />;
       case 'home2':
         return <Home2 onStart={() => setCurrentPage('test-selection')} />;
       case 'test-selection':
-        return <TestSelection onStartCombinedTest={() => setCurrentPage('questionnaire')} />;
+        return <TestSelection onStartCombinedTest={() => setCurrentPage('questionnaire')} onStartSpecificTest={(testId) => setCurrentPage(`test-${testId}`)} />;
       case 'questionnaire':
         return <Questionnaire onComplete={(results) => {
           setQuizResults(results);
           setCurrentPage('results');
         }} onBack={() => setCurrentPage('home')} />;
       case 'tests':
+        return <TestSelection onStartCombinedTest={() => setCurrentPage('questionnaire')} onStartSpecificTest={(testId) => setCurrentPage(`test-${testId}`)} />;
+      case 'test-stress':
+      case 'test-anxiety':
+      case 'test-depression':
+      case 'test-burnout':
+      case 'test-sleep':
         return <Questionnaire onComplete={(results) => {
           setQuizResults(results);
           setCurrentPage('results');
-        }} onBack={() => setCurrentPage('home')} />;
+        }} onBack={() => setCurrentPage('test-selection')} />;
       case 'about':
-        return <Home onStartTest={() => setCurrentPage('questionnaire')} onNavigate={setCurrentPage} />;
+        return <About />;
       case 'contact':
         return <Contact />;
       case 'login':
@@ -60,7 +67,7 @@ function App() {
       case 'results':
         return <Results results={quizResults} onRetake={() => setCurrentPage('questionnaire')} onHome={() => setCurrentPage('home')} />;
       default:
-        return <Home onStartTest={() => setCurrentPage('questionnaire')} onNavigate={setCurrentPage} />;
+        return <Home onStartTest={() => setCurrentPage('test-selection')} onNavigate={setCurrentPage} />;
     }
   };
 
@@ -73,8 +80,12 @@ function App() {
         currentPage !== 'home' && 
         currentPage !== 'home2' && 
         currentPage !== 'test-selection' && 
+        currentPage !== 'tests' &&
         currentPage !== 'login' && 
-        currentPage !== 'contact' ? 'with-padding' : ''
+        currentPage !== 'about' && 
+        currentPage !== 'contact' &&
+        currentPage !== 'admin-login' &&
+        currentPage !== 'admin-dashboard' ? 'with-padding' : ''
       }`}>
         {renderPage()}
       </main>
