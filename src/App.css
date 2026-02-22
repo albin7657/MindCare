@@ -44,11 +44,20 @@ body {
   width: 100%;
 }
 
-/* Add padding back for specific pages that need it */
+/* Add padding back for other pages (with fallback for older browsers) */
 .main-content.with-padding {
   padding: 20px;
   max-width: 1200px;
   margin: 0 auto;
+}
+
+/* Modern browsers */
+@supports (selector(:has(*))) {
+  .main-content:not(:has(.home2-container)) {
+    padding: 20px;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
 }
 
 /* Utility Classes */
@@ -110,7 +119,7 @@ body {
 
 /* Responsive */
 @media (max-width: 768px) {
-  .main-content.with-padding {
+  .main-content {
     padding: 10px;
   }
   

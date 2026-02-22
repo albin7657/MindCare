@@ -26,19 +26,9 @@
 }
 
 .logo-image {
-  width: auto;
-  height: 66px;
-  object-fit: cover;
-  object-position: center 30%;
-  /* crop top and bottom by showing only the middle portion */
-  clip-path: inset(12% 0 12% 0);
-  display: block;
-}
-
-@media (max-width: 768px) {
-  .logo-image {
-    height: 62px;
-  }
+  width: 120px;
+  height: 60px;
+  object-fit: contain;
 }
 
 .logo-text {

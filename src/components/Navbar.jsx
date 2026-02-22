@@ -4,11 +4,10 @@ import './Navbar.css';
 
 function Navbar({ currentPage, setCurrentPage, currentUser, onLogout }) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const logoVersion = '20260222-1';
 
   const navItems = [
     { id: 'home', label: 'Home' },
-    { id: 'test-selection', label: 'Tests' },
+    { id: 'tests', label: 'Tests' },
     { id: 'about', label: 'About' },
     { id: 'contact', label: 'Contact' }
   ];
@@ -35,7 +34,7 @@ function Navbar({ currentPage, setCurrentPage, currentUser, onLogout }) {
     <nav className="navbar">
       <div className="navbar-container">
         <div className="navbar-logo">
-          <img src={`/logo.png?v=${logoVersion}`} alt="MindCare Logo" className="logo-image" />
+          <img src="/logo.png" alt="MindCare Logo" className="logo-image" />
         </div>
         
         <button 

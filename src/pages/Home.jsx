@@ -1,226 +1,83 @@
 import './Home.css';
-import { motion } from 'framer-motion';
-import heroImage from '../assets/home_images/hero.png';
-import home2Image from '../assets/home_images/home2.png';
+import n15Image from '../assets/home_images/n15.jpg';
+import n10Image from '../assets/home_images/n10.jpg';
+import bunny4Image from '../assets/home_images/bunny4.jpg';
 import article1 from '../assets/home_images/img4.jpg';
 import article2 from '../assets/home_images/img6.jpg';
 import article3 from '../assets/home_images/img7.jpg';
-import takeTestImg from '../assets/home_images/taketest.png';
-import riskScoreImg from '../assets/home_images/riskscore.png';
-import trackProgressImg from '../assets/home_images/trackprogess.png';
-
-const fadeUp = {
-  hidden: { opacity: 0, y: 14 },
-  visible: { opacity: 1, y: 0 },
-};
-
-const cardTransition = (index) => ({
-  duration: 0.6,
-  delay: index * 0.12,
-  ease: 'easeOut',
-});
-
-const howStepImages = [
-  { src: takeTestImg, alt: 'Take the test' },
-  { src: riskScoreImg, alt: 'Get your risk score' },
-  { src: trackProgressImg, alt: 'Track your progress' },
-];
 
 function Home({ onStartTest, onNavigate }) {
   return (
     <div className="home-container">
-
-      {/* ── SEGMENT 1: HERO ── */}
-      <div className="hero-segment">
-        <img src={heroImage} alt="" className="hero-bg-img" />
-        <motion.div className="hero-content" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.75, ease: 'easeOut' }}>
-          <motion.span className="hero-eyebrow" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.05, duration: 0.45, ease: 'easeOut' }}>
-            MindCare — Student Mental Well-Being
-          </motion.span>
-          <motion.h1 className="hero-headline" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.16, duration: 0.55, ease: 'easeOut' }}>
-            Understand Your<br />
-            Mental Health in{' '}
-            <span className="hero-highlight">Minutes</span>
-          </motion.h1>
-          <motion.p className="hero-subheadline" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.28, duration: 0.55, ease: 'easeOut' }}>
-            Scientifically structured assessments for stress, anxiety,
-            burnout, depression, and sleep.
-          </motion.p>
-          <motion.div className="hero-cta-group" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.38, duration: 0.5, ease: 'easeOut' }}>
-            <button className="btn-cta-primary" onClick={onStartTest}>
-              Start Free Assessment
-            </button>
-            <button className="btn-cta-secondary" onClick={() => onNavigate('about')}>
-              Why MindCare
-            </button>
-          </motion.div>
-          <motion.p className="cta-disclaimer" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.48, duration: 0.45, ease: 'easeOut' }}>
-            Private&nbsp;•&nbsp;Anonymous&nbsp;•&nbsp;Takes 3 Minutes
-          </motion.p>
-          <motion.div className="hero-trust-strip" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.58, duration: 0.5, ease: 'easeOut' }}>
-            <span className="trust-pill">Private &amp; Anonymous</span>
-            <span className="trust-pill">Backed by Research</span>
-            <span className="trust-pill">Used by 2,000+ Students</span>
-          </motion.div>
-        </motion.div>
+      {/* Section 1: Hero with n15 image */}
+      <div className="section section-hero">
+        <div className="section-image">
+          <img src={n15Image} alt="Mental wellness" />
+        </div>
+        <div className="section-content">
+          <h1 className="brand-title">MindCare</h1>
+          <p className="tagline">Nurture · Understand · Thrive</p>
+          <p className="hero-text">Take scientifically designed assessments to measure stress, anxiety, burnout, depression, and sleep quality.</p>
+          <button className="btn btn-primary btn-large" onClick={onStartTest}>
+            Take the Mental Health Test
+          </button>
+          <p className="cta-disclaimer">
+            Private • Anonymous • For Awareness Only • Not a Diagnosis
+          </p>
+        </div>
       </div>
 
-      <motion.section
-        className="why-segment"
-        variants={fadeUp}
-        initial="hidden"
-        whileInView="visible"
-        viewport={{ once: false, amount: 0.2 }}
-        transition={{ duration: 0.6, ease: 'easeOut' }}
-      >
-        <div className="why-inner">
-          <h2 className="why-title">Why MindCare?</h2>
-          <p className="why-subtitle">Designed to be calm, private, and practical for daily student life.</p>
-          <div className="why-grid">
-            <motion.div className="why-card" variants={fadeUp} initial="hidden" whileInView="visible" viewport={{ once: false, amount: 0.2 }} transition={cardTransition(0)}>
-              <h3>100% Confidential</h3>
-              <p>Your responses remain private and focused on helping you understand your current state safely.</p>
-            </motion.div>
-            <motion.div className="why-card" variants={fadeUp} initial="hidden" whileInView="visible" viewport={{ once: false, amount: 0.2 }} transition={cardTransition(1)}>
-              <h3>Evidence-Based Scoring</h3>
-              <p>Assessments are structured around validated psychological indicators for meaningful guidance.</p>
-            </motion.div>
-            <motion.div className="why-card" variants={fadeUp} initial="hidden" whileInView="visible" viewport={{ once: false, amount: 0.2 }} transition={cardTransition(2)}>
-              <h3>Track Your Growth</h3>
-              <p>Repeat tests over time and identify small improvements before challenges become overwhelming.</p>
-            </motion.div>
+      {/* Section 2: Why MindCare with n10 image */}
+      <div className="section section-about">
+        <div className="section-image">
+          <img src={n10Image} alt="Why MindCare" />
+        </div>
+        <div className="section-content">
+          <h2>Why MindCare?</h2>
+          <p>
+            In today's fast-paced world, mental wellness often takes a backseat. MindCare was created 
+            to bridge the gap between awareness and action. We believe that understanding your mental 
+            health is the first step toward lasting wellbeing.
+          </p>
+          <p>
+            Our platform provides a safe, private space for self-reflection through carefully designed 
+            assessments. Whether you're experiencing stress, anxiety, or simply want to check in with 
+            yourself, MindCare offers insights that empower you to take control of your mental health journey.
+          </p>
+        </div>
+      </div>
+
+      {/* Section 3: Mental Health Importance with bunny4 image */}
+      <div className="section section-importance">
+        <h2 className="section-title-center">The Importance of Mental Health</h2>
+        <div className="importance-content">
+          <div className="importance-image">
+            <img src={bunny4Image} alt="Mental health matters" />
+          </div>
+          <div className="importance-text">
+            <p>
+              Mental health is just as important as physical health. It affects how we think, feel, 
+              and act in our daily lives. Taking care of your mental wellbeing helps you cope with 
+              stress, build meaningful relationships, and make healthier decisions.
+            </p>
+            <p>
+              Prioritizing mental health isn't a luxury—it's a necessity. Regular self-assessment 
+              and awareness can help you identify patterns, recognize warning signs, and seek support 
+              when needed. Remember, taking care of your mind is one of the most valuable investments 
+              you can make in yourself.
+            </p>
           </div>
         </div>
-      </motion.section>
+      </div>
 
-      {/* ── SEGMENT 2: HOW IT WORKS ── */}
-      <motion.section
-        className="how-segment"
-        id="how-it-works"
-        variants={fadeUp}
-        initial="hidden"
-        whileInView="visible"
-        viewport={{ once: false, amount: 0.2 }}
-        transition={{ duration: 0.65, ease: 'easeOut' }}
-      >
-        <img src={home2Image} alt="" className="how-bg-img" />
-        <div className="how-overlay" />
-        <div className="how-inner">
-          <motion.div
-            className="how-header"
-            variants={fadeUp}
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: false, amount: 0.25 }}
-            transition={{ duration: 0.55, ease: 'easeOut' }}
-          >
-            <h2 className="how-title">How MindCare Works</h2>
-            <p className="how-subtitle">Three simple steps to understand your mental well-being</p>
-          </motion.div>
-
-          <div className="how-steps how-steps-a">
-            <motion.div
-              className="step-card-a"
-              variants={fadeUp}
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: false, amount: 0.2 }}
-              transition={cardTransition(0)}
-            >
-              <div className="step-a-img-wrap">
-                <img src={howStepImages[0].src} alt={howStepImages[0].alt} />
-                <span className="step-a-badge">01</span>
-              </div>
-              <div className="step-a-body">
-                <h3 className="step-title">Take the Test</h3>
-                <p className="step-text">Answer 20 evidence-based questions structured around validated psychological scales.</p>
-              </div>
-            </motion.div>
-
-            <motion.div
-              className="step-card-a"
-              variants={fadeUp}
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: false, amount: 0.2 }}
-              transition={cardTransition(1)}
-            >
-              <div className="step-a-img-wrap">
-                <img src={howStepImages[1].src} alt={howStepImages[1].alt} />
-                <span className="step-a-badge">02</span>
-              </div>
-              <div className="step-a-body">
-                <h3 className="step-title">Get Your Risk Score</h3>
-                <p className="step-text">Receive categorised results — Low, Mild, Moderate, or High — across all assessed domains.</p>
-              </div>
-            </motion.div>
-
-            <motion.div
-              className="step-card-a"
-              variants={fadeUp}
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: false, amount: 0.2 }}
-              transition={cardTransition(2)}
-            >
-              <div className="step-a-img-wrap">
-                <img src={howStepImages[2].src} alt={howStepImages[2].alt} />
-                <span className="step-a-badge">03</span>
-              </div>
-              <div className="step-a-body">
-                <h3 className="step-title">Track Your Progress</h3>
-                <p className="step-text">Monitor mental health trends over time and recognise patterns before they escalate.</p>
-              </div>
-            </motion.div>
-          </div>
-        </div>
-      </motion.section>
-
-      <motion.section
-        className="stats-segment"
-        variants={fadeUp}
-        initial="hidden"
-        whileInView="visible"
-        viewport={{ once: false, amount: 0.2 }}
-        transition={{ duration: 0.6, ease: 'easeOut' }}
-      >
-        <div className="stats-inner">
-          <div className="stat-item">
-            <h3>10,000+</h3>
-            <p>Assessments Completed</p>
-          </div>
-          <div className="stat-item">
-            <h3>95%</h3>
-            <p>Users Found It Helpful</p>
-          </div>
-          <div className="stat-item">
-            <h3>5</h3>
-            <p>Core Mental Health Domains</p>
-          </div>
-        </div>
-      </motion.section>
-
-      <motion.div
-        className="articles-segment"
-        variants={fadeUp}
-        initial="hidden"
-        whileInView="visible"
-        viewport={{ once: false, amount: 0.2 }}
-        transition={{ duration: 0.65, ease: 'easeOut' }}
-      >
-        <h2 className="articles-title">Explore Mental Health Resources</h2>
+      {/* Section 4: Mental Health Articles */}
+      <div className="section section-articles">
+        <h2 className="section-title-center">Explore Mental Health Resources</h2>
         <p className="articles-intro">
           Expand your understanding with these insightful articles on mental wellness
         </p>
         <div className="articles-grid">
-          <motion.div
-            className="article-card"
-            variants={fadeUp}
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: false, amount: 0.25 }}
-            transition={cardTransition(0)}
-          >
+          <div className="article-card">
             <div className="article-image">
               <img src={article1} alt="Understanding Stress" />
             </div>
@@ -232,16 +89,9 @@ function Home({ onStartTest, onNavigate }) {
               </p>
               <button className="btn-read-more">Read More →</button>
             </div>
-          </motion.div>
+          </div>
 
-          <motion.div
-            className="article-card"
-            variants={fadeUp}
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: false, amount: 0.25 }}
-            transition={cardTransition(1)}
-          >
+          <div className="article-card">
             <div className="article-image">
               <img src={article2} alt="The Science of Sleep" />
             </div>
@@ -253,16 +103,9 @@ function Home({ onStartTest, onNavigate }) {
               </p>
               <button className="btn-read-more">Read More →</button>
             </div>
-          </motion.div>
+          </div>
 
-          <motion.div
-            className="article-card"
-            variants={fadeUp}
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: false, amount: 0.25 }}
-            transition={cardTransition(2)}
-          >
+          <div className="article-card">
             <div className="article-image">
               <img src={article3} alt="Breaking the Stigma" />
             </div>
@@ -274,22 +117,9 @@ function Home({ onStartTest, onNavigate }) {
               </p>
               <button className="btn-read-more">Read More →</button>
             </div>
-          </motion.div>
+          </div>
         </div>
-      </motion.div>
-
-      <motion.section
-        className="final-cta-segment"
-        variants={fadeUp}
-        initial="hidden"
-        whileInView="visible"
-        viewport={{ once: false, amount: 0.25 }}
-        transition={{ duration: 0.6, ease: 'easeOut' }}
-      >
-        <h2>Ready to Understand Your Mental Health?</h2>
-        <p>Take your first step with a quick, private assessment built for students.</p>
-        <button className="btn-cta-primary" onClick={onStartTest}>Start Free Assessment</button>
-      </motion.section>
+      </div>
     </div>
   );
 }
