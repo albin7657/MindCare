@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
+import { authenticateUser, registerUser } from '../utils/userData';
 import './Login.css';
 
 const fadeInUp = {
@@ -7,8 +8,9 @@ const fadeInUp = {
   visible: { opacity: 1, y: 0 },
 };
 
-function Login({ onNavigate }) {
+function Login({ onNavigate, onAuthSuccess }) {
   const [isSignUp, setIsSignUp] = useState(false);
+  const [feedback, setFeedback] = useState({ type: '', message: '' });
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -18,6 +20,7 @@ function Login({ onNavigate }) {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
+    setFeedback({ type: '', message: '' });
     setFormData(prev => ({
       ...prev,
       [name]: value
@@ -26,8 +29,32 @@ function Login({ onNavigate }) {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    // Add your authentication logic here
-    console.log('Form submitted:', formData);
+
+    if (isSignUp) {
+      if (formData.password !== formData.confirmPassword) {
+        setFeedback({ type: 'error', message: 'Passwords do not match.' });
+        return;
+      }
+
+      const result = registerUser(formData);
+      if (!result.ok) {
+        setFeedback({ type: 'error', message: result.message });
+        return;
+      }
+
+      setFeedback({ type: 'success', message: 'Account created successfully. Redirecting to your dashboard...' });
+      onAuthSuccess?.(result.user);
+      return;
+    }
+
+    const result = authenticateUser(formData);
+    if (!result.ok) {
+      setFeedback({ type: 'error', message: result.message });
+      return;
+    }
+
+    setFeedback({ type: 'success', message: 'Login successful. Redirecting to your dashboard...' });
+    onAuthSuccess?.(result.user);
   };
 
   return (
@@ -43,6 +70,12 @@ function Login({ onNavigate }) {
         </motion.div>
 
         <motion.form className="login-form" onSubmit={handleSubmit} variants={fadeInUp} transition={{ duration: 0.4, ease: 'easeOut' }}>
+          {feedback.message && (
+            <div className={`login-feedback ${feedback.type === 'error' ? 'error' : 'success'}`}>
+              {feedback.message}
+            </div>
+          )}
+
           <AnimatePresence mode="wait">
             {isSignUp && (
               <motion.div
@@ -70,13 +103,13 @@ function Login({ onNavigate }) {
           </AnimatePresence>
 
           <motion.div className="form-group" variants={fadeInUp} transition={{ duration: 0.4, ease: 'easeOut' }}>
-            <label htmlFor="email">Email Address</label>
+            <label htmlFor="email">Email or Username</label>
             <input
-              type="email"
+              type="text"
               id="email"
               name="email"
               className="form-input"
-              placeholder="Enter your email"
+              placeholder="Enter your email or username"
               value={formData.email}
               onChange={handleInputChange}
               required
@@ -146,7 +179,10 @@ function Login({ onNavigate }) {
             <button 
               type="button" 
               className="link-button"
-              onClick={() => setIsSignUp(!isSignUp)}
+              onClick={() => {
+                setIsSignUp(!isSignUp);
+                setFeedback({ type: '', message: '' });
+              }}
             >
               {isSignUp ? 'Sign In' : 'Sign Up'}
             </button>

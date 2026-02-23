@@ -2,11 +2,12 @@ import { useState } from 'react';
 import { FaBars, FaTimes } from 'react-icons/fa';
 import './Navbar.css';
 
-function Navbar({ currentPage, setCurrentPage }) {
+function Navbar({ currentPage, setCurrentPage, isUserAuthenticated, onUserLogout, currentUser }) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const logoVersion = '20260222-1';
 
-  const navItems = [
+  const guestNavItems = [
     { id: 'home', label: 'Home' },
     { id: 'test-selection', label: 'Tests' },
     { id: 'about', label: 'About' },
@@ -14,9 +15,33 @@ function Navbar({ currentPage, setCurrentPage }) {
     { id: 'login', label: 'Login' }
   ];
 
+  const userNavItems = [
+    { id: 'home', label: 'Home' },
+    { id: 'test-selection', label: 'Tests' },
+    { id: 'user-dashboard', label: 'Dashboard' },
+    { id: 'about', label: 'About' },
+    { id: 'contact', label: 'Contact' }
+  ];
+
+  const userMenuItems = [
+    { id: 'user-dashboard', label: 'Dashboard' },
+    { id: 'user-analytics', label: 'Analytics' },
+    { id: 'user-history', label: 'Test History' },
+    { id: 'user-recommendations', label: 'Recommendations' }
+  ];
+
+  const navItems = isUserAuthenticated ? userNavItems : guestNavItems;
+
   const handleNavClick = (pageId) => {
     setCurrentPage(pageId);
     setIsMenuOpen(false);
+    setIsUserMenuOpen(false);
+  };
+
+  const getDisplayName = () => {
+    if (!currentUser?.name) return 'team10';
+    const first = currentUser.name.trim().split(' ')[0];
+    return first.toLowerCase();
   };
 
   return (
@@ -46,6 +71,34 @@ function Navbar({ currentPage, setCurrentPage }) {
               </button>
             </li>
           ))}
+
+          {isUserAuthenticated && (
+            <li className="user-menu-wrapper">
+              <button
+                className={`nav-link user-greeting ${isUserMenuOpen ? 'active' : ''}`}
+                onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+              >
+                Hi {getDisplayName()}
+              </button>
+
+              {isUserMenuOpen && (
+                <div className="user-popup-menu">
+                  {userMenuItems.map((item) => (
+                    <button
+                      key={item.id}
+                      className={`user-popup-item ${currentPage === item.id ? 'active' : ''}`}
+                      onClick={() => handleNavClick(item.id)}
+                    >
+                      {item.label}
+                    </button>
+                  ))}
+                  <button className="user-popup-item logout" onClick={onUserLogout}>
+                    Logout
+                  </button>
+                </div>
+              )}
+            </li>
+          )}
         </ul>
       </div>
     </nav>

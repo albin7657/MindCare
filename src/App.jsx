@@ -10,12 +10,50 @@ import Results from './pages/Results';
 import Login from './pages/Login';
 import AdminLogin from './pages/AdminLogin';
 import AdminDashboard from './pages/AdminDashboard';
+import UserDashboard from './pages/UserDashboard';
+import { buildAssessmentEntry } from './utils/assessment';
+import {
+  addUserHistoryEntry,
+  clearCurrentUser,
+  getCurrentUser,
+  getUserHistory,
+  setCurrentUser
+} from './utils/userData';
 import './App.css';
 
 function App() {
+  const initialUser = getCurrentUser();
   const [currentPage, setCurrentPage] = useState('home');
   const [quizResults, setQuizResults] = useState(null);
   const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(false);
+  const [authenticatedUser, setAuthenticatedUser] = useState(initialUser);
+  const [userHistory, setUserHistory] = useState(() => initialUser?.id ? getUserHistory(initialUser.id) : []);
+
+  const handleUserAuthenticated = (user) => {
+    setAuthenticatedUser(user);
+    setCurrentUser(user);
+    setUserHistory(getUserHistory(user.id));
+    setCurrentPage('user-dashboard');
+  };
+
+  const handleUserLogout = () => {
+    clearCurrentUser();
+    setAuthenticatedUser(null);
+    setUserHistory([]);
+    setCurrentPage('home');
+  };
+
+  const handleAssessmentComplete = (results) => {
+    setQuizResults(results);
+
+    if (authenticatedUser?.id) {
+      const entry = buildAssessmentEntry(results);
+      const updatedHistory = addUserHistoryEntry(authenticatedUser.id, entry);
+      setUserHistory(updatedHistory);
+    }
+
+    setCurrentPage('results');
+  };
 
   const renderPage = () => {
     switch(currentPage) {
@@ -26,10 +64,7 @@ function App() {
       case 'test-selection':
         return <TestSelection onStartCombinedTest={() => setCurrentPage('questionnaire')} onStartSpecificTest={(testId) => setCurrentPage(`test-${testId}`)} />;
       case 'questionnaire':
-        return <Questionnaire onComplete={(results) => {
-          setQuizResults(results);
-          setCurrentPage('results');
-        }} onBack={() => setCurrentPage('home')} />;
+        return <Questionnaire onComplete={handleAssessmentComplete} onBack={() => setCurrentPage('home')} />;
       case 'tests':
         return <TestSelection onStartCombinedTest={() => setCurrentPage('questionnaire')} onStartSpecificTest={(testId) => setCurrentPage(`test-${testId}`)} />;
       case 'test-stress':
@@ -37,16 +72,45 @@ function App() {
       case 'test-depression':
       case 'test-burnout':
       case 'test-sleep':
-        return <Questionnaire onComplete={(results) => {
-          setQuizResults(results);
-          setCurrentPage('results');
-        }} onBack={() => setCurrentPage('test-selection')} />;
+        return <Questionnaire onComplete={handleAssessmentComplete} onBack={() => setCurrentPage('test-selection')} />;
       case 'about':
         return <About />;
       case 'contact':
         return <Contact />;
       case 'login':
-        return <Login onNavigate={setCurrentPage} />;
+        return <Login onNavigate={setCurrentPage} onAuthSuccess={handleUserAuthenticated} />;
+      case 'user-dashboard':
+        if (!authenticatedUser) {
+          setCurrentPage('login');
+          return <Login onNavigate={setCurrentPage} onAuthSuccess={handleUserAuthenticated} />;
+        }
+        return (
+          <UserDashboard
+            user={authenticatedUser}
+            history={userHistory}
+            view="overview"
+            onOpenTests={() => setCurrentPage('test-selection')}
+            onStartCombinedTest={() => setCurrentPage('questionnaire')}
+            onStartSpecificTest={(testId) => setCurrentPage(`test-${testId}`)}
+          />
+        );
+      case 'user-analytics':
+      case 'user-history':
+      case 'user-recommendations':
+        if (!authenticatedUser) {
+          setCurrentPage('login');
+          return <Login onNavigate={setCurrentPage} onAuthSuccess={handleUserAuthenticated} />;
+        }
+        return (
+          <UserDashboard
+            user={authenticatedUser}
+            history={userHistory}
+            view={currentPage === 'user-analytics' ? 'analytics' : currentPage === 'user-history' ? 'history' : 'recommendations'}
+            onOpenTests={() => setCurrentPage('test-selection')}
+            onStartCombinedTest={() => setCurrentPage('questionnaire')}
+            onStartSpecificTest={(testId) => setCurrentPage(`test-${testId}`)}
+          />
+        );
       case 'admin-login':
         return <AdminLogin onLogin={() => {
           setIsAdminAuthenticated(true);
@@ -65,7 +129,14 @@ function App() {
           setCurrentPage('home');
         }} />;
       case 'results':
-        return <Results results={quizResults} onRetake={() => setCurrentPage('questionnaire')} onHome={() => setCurrentPage('home')} />;
+        return (
+          <Results
+            results={quizResults}
+            onRetake={() => setCurrentPage('questionnaire')}
+            onHome={() => setCurrentPage('home')}
+            onDashboard={authenticatedUser ? () => setCurrentPage('user-dashboard') : null}
+          />
+        );
       default:
         return <Home onStartTest={() => setCurrentPage('test-selection')} onNavigate={setCurrentPage} />;
     }
@@ -74,7 +145,13 @@ function App() {
   return (
     <div className="app">
       {currentPage !== 'admin-dashboard' && currentPage !== 'admin-login' && (
-        <Navbar currentPage={currentPage} setCurrentPage={setCurrentPage} />
+        <Navbar
+          currentPage={currentPage}
+          setCurrentPage={setCurrentPage}
+          currentUser={authenticatedUser}
+          isUserAuthenticated={Boolean(authenticatedUser)}
+          onUserLogout={handleUserLogout}
+        />
       )}
       <main className={`main-content ${
         currentPage !== 'home' && 

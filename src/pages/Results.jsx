@@ -1,33 +1,24 @@
 import { FaExclamationTriangle } from 'react-icons/fa';
+import { calculateScores } from '../utils/assessment';
 import './Results.css';
 
-function Results({ results, onRetake, onHome }) {
-  const calculateScores = () => {
-    // Calculate individual category scores
-    const stressScore = [1, 2, 3, 4].reduce((sum, q) => sum + (results.screen1[`q${q}`] || 0), 0);
-    const anxietyScore = [5, 6, 7, 8].reduce((sum, q) => sum + (results.screen1[`q${q}`] || 0), 0);
-    const depressionScore = [9, 10, 11, 12].reduce((sum, q) => sum + (results.screen2[`q${q}`] || 0), 0);
-    const burnoutScore = [13, 14, 15, 16].reduce((sum, q) => sum + (results.screen2[`q${q}`] || 0), 0);
-    const sleepScore = [17, 18, 19, 20].reduce((sum, q) => sum + (results.screen3[`q${q}`] || 0), 0);
+function Results({ results, onRetake, onHome, onDashboard }) {
+  if (!results) {
+    return (
+      <div className="results-container">
+        <div className="results-header card">
+          <h1 className="results-title">No Results Available</h1>
+          <p className="results-subtitle">Take an assessment first to view your insights.</p>
+          <div className="results-actions">
+            <button className="btn btn-primary" onClick={onRetake}>Start Assessment</button>
+            <button className="btn btn-secondary" onClick={onHome}>Back to Home</button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
-    return {
-      stress: { score: stressScore, max: 16 },
-      anxiety: { score: anxietyScore, max: 16 },
-      depression: { score: depressionScore, max: 16 },
-      burnout: { score: burnoutScore, max: 16 },
-      sleep: { score: sleepScore, max: 12 }
-    };
-  };
-
-  const getLevel = (score, max) => {
-    const percentage = (score / max) * 100;
-    if (percentage < 25) return { label: 'Low', color: '#4CAF50' };
-    if (percentage < 50) return { label: 'Mild', color: '#FFC107' };
-    if (percentage < 75) return { label: 'Moderate', color: '#FF9800' };
-    return { label: 'High', color: '#F44336' };
-  };
-
-  const scores = calculateScores();
+  const scores = calculateScores(results);
 
   return (
     <div className="results-container">
@@ -40,7 +31,6 @@ function Results({ results, onRetake, onHome }) {
 
       <div className="results-grid">
         {Object.entries(scores).map(([category, data]) => {
-          const level = getLevel(data.score, data.max);
           const percentage = (data.score / data.max) * 100;
 
           return (
@@ -55,12 +45,12 @@ function Results({ results, onRetake, onHome }) {
                   className="result-bar-fill" 
                   style={{ 
                     width: `${percentage}%`,
-                    background: level.color
+                    background: data.level.color
                   }}
                 ></div>
               </div>
-              <div className="result-level" style={{ color: level.color }}>
-                {level.label}
+              <div className="result-level" style={{ color: data.level.color }}>
+                {data.level.label}
               </div>
             </div>
           );
@@ -81,6 +71,11 @@ function Results({ results, onRetake, onHome }) {
         </div>
         
         <div className="results-actions">
+          {onDashboard && (
+            <button className="btn btn-secondary" onClick={onDashboard}>
+              View My Dashboard
+            </button>
+          )}
           <button className="btn btn-secondary" onClick={onRetake}>
             Retake Assessment
           </button>
