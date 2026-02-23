@@ -15,6 +15,11 @@ const QuestionSchema = new mongoose.Schema({
     type: String,
     required: true
   },
+  option_set_id: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "OptionSet",
+    required: true
+  },
   // optional weight multiplier used in scoring, default is 1
   weight: {
     type: Number,

@@ -7,6 +7,7 @@ import domainsRoutes from "./routes/domainsRoutes.js";
 import authRoutes from "./routes/authRoutes.js";
 import adminRoutes from "./routes/adminRoutes.js";
 import optionRoutes from "./routes/optionRoutes.js";
+import optionSetRoutes from "./routes/optionSetRoutes.js";
 import assessmentTypeRoutes from "./routes/assessmentTypeRoutes.js";
 import assessmentAttemptsRoutes from "./routes/assessmentAttemptsRoutes.js";
 
@@ -24,8 +25,9 @@ app.use("/api/domains", domainsRoutes);
 app.use("/api/assessment-types", assessmentTypeRoutes);
 app.use("/api/assessment-attempts", assessmentAttemptsRoutes);
 app.use("/api/questions", questionRoutes);
-//app.use("/api/results", resultRoutes);
+app.use("/api/option-sets", optionSetRoutes);
 app.use("/api/options", optionRoutes);
+//app.use("/api/results", resultRoutes);
 
 
 

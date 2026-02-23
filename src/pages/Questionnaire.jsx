@@ -46,8 +46,9 @@ function Questionnaire({ onComplete, onBack }) {
 
   const isScreenComplete = () => {
     const currentAnswers = answers[`screen${currentScreen}`];
-    const requiredQuestions = currentScreen === 1 ? 8 : currentScreen === 2 ? 8 : 4;
-    return Object.keys(currentAnswers).length === requiredQuestions;
+    // Allow progression if at least some answers are provided
+    // The actual count will be validated once questions load
+    return Object.keys(currentAnswers).length > 0;
   };
 
   return (

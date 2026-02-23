@@ -1,50 +1,91 @@
+import { useState, useEffect } from 'react';
 import QuestionCard from './QuestionCard';
 import './Screen.css';
 
 function Screen1({ answers, onUpdate, showValidation }) {
-  const questions = [
-    "In the last month, how often have you felt nervous and stressed?",
-    "In the last month, how often have you found that you could not cope with all the things that you had to do?",
-    "You feel that too many demands are being made on you",
-    "You have many worries",
-    "I experienced breathing difficulty (e.g. excessively rapid breathing, breathlessness in the absence of physical exertion)",
-    "I felt I was close to panic",
-    "In the last three months, have you found that it's hard to stop yourself from worrying?",
-    "Feeling afraid, as if something awful might happen"
-  ];
+  const [questions, setQuestions] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  const scale = [
-    { value: 0, label: 'Never' },
-    { value: 1, label: 'Rarely' },
-    { value: 2, label: 'Sometimes' },
-    { value: 3, label: 'Often' },
-    { value: 4, label: 'Almost Always' }
-  ];
+  useEffect(() => {
+    const fetchQuestions = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch('http://localhost:5000/api/domains/questions-by-domains/Stress,Anxiety');
+        if (!response.ok) {
+          throw new Error('Failed to fetch questions');
+        }
+        const data = await response.json();
+        setQuestions(data);
+        setError(null);
+      } catch (err) {
+        console.error('Error fetching questions:', err);
+        setError('Failed to load questions. Please try again.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchQuestions();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="screen-container">
+        <div className="screen-header">
+          <h2 className="screen-title">Stress & Anxiety Assessment</h2>
+        </div>
+        <div className="loading-message">Loading questions...</div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="screen-container">
+        <div className="screen-header">
+          <h2 className="screen-title">Stress & Anxiety Assessment</h2>
+        </div>
+        <div className="error-message">{error}</div>
+      </div>
+    );
+  }
 
   return (
     <div className="screen-container">
       <div className="screen-header">
         <h2 className="screen-title">Stress & Anxiety Assessment</h2>
         <p className="screen-description">
-          Please answer the following 8 questions about your stress and anxiety levels.
+          Please answer the following {questions.length} questions about your stress and anxiety levels.
         </p>
       </div>
 
       <div className="questions-container">
-        {questions.map((question, index) => (
-          <QuestionCard
-            key={index}
-            questionNumber={index + 1}
-            question={question}
-            scale={scale}
-            selectedValue={answers[`q${index + 1}`]}
-            onSelect={(value) => onUpdate({ [`q${index + 1}`]: value })}
-            isUnanswered={showValidation && answers[`q${index + 1}`] === undefined}
-          />
-        ))}
+        {questions.map((question, index) => {
+          // Transform options from database format to QuestionCard format
+          const scale = question.options
+            .sort((a, b) => a.points - b.points) // Sort by points value
+            .map(option => ({
+              value: option.points,
+              label: option.option_text
+            }));
+
+          return (
+            <QuestionCard
+              key={question._id}
+              questionNumber={index + 1}
+              question={question.question_text}
+              scale={scale}
+              selectedValue={answers[`q${index + 1}`]}
+              onSelect={(value) => onUpdate({ [`q${index + 1}`]: value })}
+              isUnanswered={showValidation && answers[`q${index + 1}`] === undefined}
+            />
+          );
+        })}
       </div>
     </div>
   );
 }
 
 export default Screen1;
+

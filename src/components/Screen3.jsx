@@ -1,42 +1,87 @@
+import { useState, useEffect } from 'react';
 import QuestionCard from './QuestionCard';
 import './Screen.css';
 
 function Screen3({ answers, optionalData, onUpdate, onOptionalUpdate, showValidation }) {
-  const questions = [
-    "How often do you have difficulty falling asleep at night?",
-    "How often do you wake up during the night and struggle to fall asleep again?",
-    "How often do you feel sleepy or drowsy during classes or study hours?",
-    "During the past month, how would you rate your sleep quality overall?"
-  ];
+  const [questions, setQuestions] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  const scale = [
-    { value: 0, label: 'Not during the past month' },
-    { value: 1, label: 'Less than once a week' },
-    { value: 2, label: 'Once or twice a week' },
-    { value: 3, label: 'Three or more times a week' }
-  ];
+  useEffect(() => {
+    const fetchQuestions = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch('http://localhost:5000/api/domains/questions-by-domains/Sleep');
+        if (!response.ok) {
+          throw new Error('Failed to fetch questions');
+        }
+        const data = await response.json();
+        setQuestions(data);
+        setError(null);
+      } catch (err) {
+        console.error('Error fetching questions:', err);
+        setError('Failed to load questions. Please try again.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchQuestions();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="screen-container">
+        <div className="screen-header">
+          <h2 className="screen-title">Sleep Quality Assessment</h2>
+        </div>
+        <div className="loading-message">Loading questions...</div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="screen-container">
+        <div className="screen-header">
+          <h2 className="screen-title">Sleep Quality Assessment</h2>
+        </div>
+        <div className="error-message">{error}</div>
+      </div>
+    );
+  }
 
   return (
     <div className="screen-container">
       <div className="screen-header">
         <h2 className="screen-title">Sleep Quality Assessment</h2>
         <p className="screen-description">
-          Please answer the following 4 questions about your sleep patterns.
+          Please answer the following {questions.length} questions about your sleep patterns.
         </p>
       </div>
 
       <div className="questions-container">
-        {questions.map((question, index) => (
-          <QuestionCard
-            key={index}
-            questionNumber={index + 17}
-            question={question}
-            scale={scale}
-            selectedValue={answers[`q${index + 17}`]}
-            onSelect={(value) => onUpdate({ [`q${index + 17}`]: value })}
-            isUnanswered={showValidation && answers[`q${index + 17}`] === undefined}
-          />
-        ))}
+        {questions.map((question, index) => {
+          // Transform options from database format to QuestionCard format
+          const scale = question.options
+            .sort((a, b) => a.points - b.points)
+            .map(option => ({
+              value: option.points,
+              label: option.option_text
+            }));
+
+          return (
+            <QuestionCard
+              key={question._id}
+              questionNumber={index + 17}
+              question={question.question_text}
+              scale={scale}
+              selectedValue={answers[`q${index + 17}`]}
+              onSelect={(value) => onUpdate({ [`q${index + 17}`]: value })}
+              isUnanswered={showValidation && answers[`q${index + 17}`] === undefined}
+            />
+          );
+        })}
       </div>
 
       <div className="optional-section">

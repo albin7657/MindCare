@@ -101,10 +101,25 @@
   color: var(--text-secondary);
 }
 
-@media (max-width: 768px) {
-  .screen-title {
-    font-size: 24px;
-  }
+.loading-message {
+  text-align: center;
+  padding: 40px 20px;
+  font-size: 18px;
+  color: var(--text-secondary);
+  font-style: italic;
+}
+
+.error-message {
+  background-color: #ffe6e6;
+  border: 2px solid #ff6b6b;
+  border-radius: 8px;
+  padding: 20px;
+  color: #d32f2f;
+  font-size: 16px;
+  margin: 20px 0;
+  text-align: center;
+}
+
   
   .screen-description {
     font-size: 14px;

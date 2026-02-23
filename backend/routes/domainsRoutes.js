@@ -5,6 +5,47 @@ import Option from "../models/Option.js";
 
 const router = express.Router();
 
+// GET questions with options by multiple domain names
+router.get("/questions-by-domains/:domainNames", async (req, res) => {
+  try {
+    const domainNamesStr = decodeURIComponent(req.params.domainNames);
+    const domainNames = domainNamesStr.split(',').map(name => name.trim());
+    
+    // Find domains by names
+    const domains = await Domain.find({ domain_name: { $in: domainNames } });
+    if (domains.length === 0) {
+      return res.status(404).json({ error: "No domains found" });
+    }
+
+    const domainIds = domains.map(d => d._id);
+
+    // Find all questions in these domains with option set populated
+    const questions = await Question.find({ domain_id: { $in: domainIds } })
+      .populate("option_set_id");
+
+    // Transform to include options from the option set
+    const questionsWithOptions = await Promise.all(
+      questions.map(async (question) => {
+        const options = await Option.find({ option_set_id: question.option_set_id._id }).sort({ order: 1 });
+        return {
+          _id: question._id,
+          question_text: question.question_text,
+          domain_id: question.domain_id,
+          assessment_type_id: question.assessment_type_id,
+          weight: question.weight,
+          option_set_id: question.option_set_id._id,
+          option_set_name: question.option_set_id.set_name,
+          options: options
+        };
+      })
+    );
+
+    res.json(questionsWithOptions);
+  } catch (err) {
+    res.status(500).json({ error: "Failed to fetch questions" });
+  }
+});
+
 // GET all domains
 router.get("/", async (req, res) => {
   try {

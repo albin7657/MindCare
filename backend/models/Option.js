@@ -1,15 +1,25 @@
 import mongoose from "mongoose";
 
 const OptionSchema = new mongoose.Schema({
-  question_id: {
+  option_set_id: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: "Question",
+    ref: "OptionSet",
     required: true
   },
 
-  option_text: String,
+  option_text: {
+    type: String,
+    required: true
+  },
 
-  points: Number
-});
+  points: {
+    type: Number,
+    required: true
+  },
+
+  order: {
+    type: Number,
+    default: 0
+  }});
 
 export default mongoose.model("Option", OptionSchema);
