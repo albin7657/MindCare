@@ -3,18 +3,18 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  padding: 40px 20px;
-  background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+  background: #E4E9D7;
 }
 
 .admin-login-card {
-  background: white;
+  background: #F5F1E6;
   border-radius: 25px;
   padding: 50px;
   max-width: 480px;
   width: 100%;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-  border: 2px solid #3498db;
+  margin: 20px;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.06);
+  border: 1px solid #E8DFA5;
 }
 
 .admin-header {
@@ -24,8 +24,8 @@
 
 .admin-badge {
   display: inline-block;
-  background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
-  color: white;
+  background: #AEB69A;
+  color: #2C2C2C;
   padding: 8px 20px;
   border-radius: 20px;
   font-size: 12px;
@@ -37,14 +37,14 @@
 
 .admin-title {
   font-size: 28px;
-  color: #2c3e50;
+  color: #2C2C2C;
   margin-bottom: 10px;
   font-weight: 700;
 }
 
 .admin-subtitle {
   font-size: 15px;
-  color: #7f8c8d;
+  color: #5A5A5A;
   line-height: 1.5;
 }
 
@@ -75,7 +75,7 @@
   margin-top: 30px;
   text-align: center;
   padding-top: 20px;
-  border-top: 1px solid #ecf0f1;
+  border-top: 1px solid #E8DFA5;
 }
 
 /* Responsive */

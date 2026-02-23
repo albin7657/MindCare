@@ -9,9 +9,11 @@
 /* Messaging Section - Top */
 .contact-messaging-section {
   background: linear-gradient(135deg, var(--tertiary-color) 0%, var(--quaternary-color) 100%);
-  padding: 80px 60px;
+  padding: 0;
   display: flex;
   justify-content: center;
+  min-height: 100vh;
+  align-items: center;
 }
 
 .messaging-card {
@@ -221,7 +223,10 @@
 
 /* Responsive Design */
 @media (max-width: 1024px) {
-  .contact-messaging-section,
+  .contact-messaging-section {
+    padding: 0;
+  }
+  
   .contact-info-section {
     padding: 60px 40px;
   }
@@ -236,7 +241,10 @@
 }
 
 @media (max-width: 768px) {
-  .contact-messaging-section,
+  .contact-messaging-section {
+    padding: 0;
+  }
+  
   .contact-info-section {
     padding: 40px 20px;
   }

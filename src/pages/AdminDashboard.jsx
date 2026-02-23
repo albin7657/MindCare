@@ -1,11 +1,108 @@
 import { useState, useEffect } from 'react';
-import { FaUsers, FaChartBar, FaQuestionCircle, FaCog, FaSignOutAlt, FaPlus, FaTrash, FaEdit, FaHistory, FaCalculator, FaChevronDown, FaArrowLeft } from 'react-icons/fa';
+import { FaUsers, FaChartBar, FaQuestionCircle, FaCog, FaSignOutAlt, FaPlus, FaTrash, FaEdit, FaHistory, FaCalculator, FaChevronDown, FaArrowLeft, FaBars, FaTimes } from 'react-icons/fa';
 import './AdminDashboard.css';
 
 function AdminDashboard({ onLogout }) {
   const [activeTab, setActiveTab] = useState('overview');
-  const [domains, setDomains] = useState([]);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [assessmentTypes, setAssessmentTypes] = useState([]);
+  const [domains, setDomains] = useState([
+    {
+      id: 'stress',
+      name: 'Stress',
+      color: '#FF8F8F',
+      questions: [
+        { 
+          text: "In the last month, how often have you felt nervous and stressed?", 
+          weight: 1,
+          options: [
+            { value: 0, label: 'Never' },
+            { value: 1, label: 'Rarely' },
+            { value: 2, label: 'Sometimes' },
+            { value: 3, label: 'Often' },
+            { value: 4, label: 'Almost Always' }
+          ]
+        },
+        { 
+          text: "In the last month, how often have you found that you could not cope with all the things that you had to do?", 
+          weight: 1,
+          options: [
+            { value: 0, label: 'Never' },
+            { value: 1, label: 'Rarely' },
+            { value: 2, label: 'Sometimes' },
+            { value: 3, label: 'Often' },
+            { value: 4, label: 'Almost Always' }
+          ]
+        },
+        { 
+          text: "You feel that too many demands are being made on you", 
+          weight: 1,
+          options: [
+            { value: 0, label: 'Never' },
+            { value: 1, label: 'Rarely' },
+            { value: 2, label: 'Sometimes' },
+            { value: 3, label: 'Often' },
+            { value: 4, label: 'Almost Always' }
+          ]
+        },
+        { 
+          text: "You have many worries", 
+          weight: 1,
+          options: [
+            { value: 0, label: 'Never' },
+            { value: 1, label: 'Rarely' },
+            { value: 2, label: 'Sometimes' },
+            { value: 3, label: 'Often' },
+            { value: 4, label: 'Almost Always' }
+          ]
+        }
+      ]
+    },
+    {
+      id: 'anxiety',
+      name: 'Anxiety',
+      color: '#f6ad55',
+      questions: [
+        { text: "I experienced breathing difficulty (e.g. excessively rapid breathing, breathlessness in the absence of physical exertion)", weight: 1 },
+        { text: "I felt I was close to panic", weight: 1 },
+        { text: "In the last three months, have you found that it's hard to stop yourself from worrying?", weight: 1 },
+        { text: "Feeling afraid, as if something awful might happen", weight: 1 }
+      ]
+    },
+    {
+      id: 'depression',
+      name: 'Depression',
+      color: '#9f7aea',
+      questions: [
+        { text: "I couldn't seem to experience any positive feeling at all", weight: 1 },
+        { text: "I found it difficult to work up the initiative to do things", weight: 1 },
+        { text: "I felt that I had nothing to look forward to", weight: 1 },
+        { text: "I felt down-hearted and blue", weight: 1 }
+      ]
+    },
+    {
+      id: 'burnout',
+      name: 'Burnout',
+      color: '#ed8936',
+      questions: [
+        { text: "I feel like a failure", weight: 1 },
+        { text: "I feel emotionally exhausted from my work/studies", weight: 1 },
+        { text: "I feel used up at the end of the day", weight: 1 },
+        { text: "I feel burned out from my work/studies", weight: 1 }
+      ]
+    },
+    {
+      id: 'sleep',
+      name: 'Sleep Quality',
+      color: '#4299e1',
+      questions: [
+        { text: "During the past month, how would you rate your sleep quality overall?", weight: 0.75 },
+        { text: "During the past month, how often have you had trouble sleeping?", weight: 0.75 },
+        { text: "During the past month, how often have you taken medicine to help you sleep?", weight: 0.75 },
+        { text: "During the past month, how often have you had trouble staying awake?", weight: 0.75 }
+      ]
+    }
+  ]);
 
   const [editingQuestion, setEditingQuestion] = useState(null);
   // weight is fixed at 1, no input provided
@@ -267,6 +364,22 @@ function AdminDashboard({ onLogout }) {
 
     calculateAverages();
   }, [domains]);
+
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth > 768) {
+        setIsMobileMenuOpen(false);
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  const handleTabChange = (tab) => {
+    setActiveTab(tab);
+    setIsMobileMenuOpen(false);
+  };
 
   // Mock data for testing statistics
   const mockStats = {
@@ -1316,7 +1429,15 @@ function AdminDashboard({ onLogout }) {
           <button className="alert-close" onClick={() => setAlert(null)}>×</button>
         </div>
       )}
-      <div className="admin-sidebar">
+      <button
+        type="button"
+        className={`admin-sidebar-backdrop ${isMobileMenuOpen ? 'visible' : ''}`}
+        aria-label="Close menu"
+        onClick={() => setIsMobileMenuOpen(false)}
+      />
+
+      <div className={`admin-sidebar ${isMobileMenuOpen ? 'mobile-open' : ''}`}>
+
         <div className="admin-brand">
           <h2>MindCare Admin</h2>
         </div>
@@ -1324,25 +1445,25 @@ function AdminDashboard({ onLogout }) {
         <nav className="admin-nav">
           <button 
             className={`nav-item ${activeTab === 'overview' ? 'active' : ''}`}
-            onClick={() => setActiveTab('overview')}
+            onClick={() => handleTabChange('overview')}
           >
             <FaChartBar /> Dashboard
           </button>
           <button 
             className={`nav-item ${activeTab === 'history' ? 'active' : ''}`}
-            onClick={() => setActiveTab('history')}
+            onClick={() => handleTabChange('history')}
           >
             <FaHistory /> Test History
           </button>
           <button 
             className={`nav-item ${activeTab === 'questions' ? 'active' : ''}`}
-            onClick={() => setActiveTab('questions')}
+            onClick={() => handleTabChange('questions')}
           >
             <FaQuestionCircle /> Questions
           </button>
           <button 
             className={`nav-item ${activeTab === 'scoring' ? 'active' : ''}`}
-            onClick={() => setActiveTab('scoring')}
+            onClick={() => handleTabChange('scoring')}
           >
             <FaCalculator /> Scoring Logic
           </button>
@@ -1354,6 +1475,17 @@ function AdminDashboard({ onLogout }) {
       </div>
 
       <div className="admin-main">
+        <div className="admin-mobile-topbar">
+          <button
+            type="button"
+            className="admin-menu-toggle"
+            onClick={() => setIsMobileMenuOpen((prev) => !prev)}
+            aria-label="Toggle admin menu"
+          >
+            {isMobileMenuOpen ? <FaTimes /> : <FaBars />}
+          </button>
+          <h3>Admin Panel</h3>
+        </div>
         <div className="admin-content">
           {activeTab === 'overview' && renderOverview()}
           {activeTab === 'history' && renderTestHistory()}
