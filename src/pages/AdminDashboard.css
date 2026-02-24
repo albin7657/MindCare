@@ -69,7 +69,7 @@
 /* Sidebar */
 .admin-sidebar {
   width: 260px;
-  background: linear-gradient(180deg, #13283A 0%, #1a3548 100%);
+  background: linear-gradient(180deg, var(--accent) 0%, #1a3548 100%);
   color: white;
   display: flex;
   flex-direction: column;
@@ -164,7 +164,7 @@
 
 .section-title {
   font-size: 28px;
-  color: #13283A;
+  color: var(--accent);
   margin-bottom: 30px;
   font-weight: 700;
 }
@@ -374,7 +374,7 @@
 
 .question-text {
   flex: 1;
-  color: #13283A;
+  color: var(--accent);
   line-height: 1.5;
   font-weight: 500;
 }
@@ -520,7 +520,7 @@
 .domain-card-title {
   margin: 0;
   font-size: 22px;
-  color: #13283A;
+  color: var(--accent);
   font-weight: 700;
 }
 
@@ -600,13 +600,13 @@
 }
 
 .btn-back:hover {
-  background: #13283A;
+  background: var(--accent);
 }
 
 .domain-detail-title {
   margin: 0;
   font-size: 26px;
-  color: #13283A;
+  color: var(--accent);
   font-weight: 700;
   display: flex;
   align-items: center;
@@ -984,7 +984,7 @@
 
 .history-select:focus {
   outline: none;
-  border-color: #13283A;
+  border-color: var(--accent);
   box-shadow: 0 0 0 3px rgba(19, 40, 58, 0.1);
 }
 
@@ -1396,6 +1396,7 @@
   transform: scale(1.05);
 }
 
+
 /* Additional UI polish */
 :root{
   --accent:#13283A;
@@ -1749,4 +1750,6 @@
   .history-stat-card {
     padding: 16px;
   }
+
+}
 }

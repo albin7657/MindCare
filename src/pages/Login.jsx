@@ -33,24 +33,43 @@ function Login({ onNavigate, onAuth }) {
 
     const doAuth = async () => {
       try {
+        const fetchOptions = {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+        };
+
         if (isSignUp) {
           // Register
           const res = await fetch('http://localhost:5000/api/auth/register', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            ...fetchOptions,
             body: JSON.stringify({ name: formData.name, email: formData.email, password: formData.password })
           });
-          const data = await res.json();
+
+          let data;
+          const contentType = res.headers.get("content-type");
+          if (contentType && contentType.indexOf("application/json") !== -1) {
+            data = await res.json();
+          } else {
+            data = { message: await res.text() };
+          }
+
           if (res.ok) {
             setMessage('Registration successful — you are now signed in');
             // try to log in automatically
             const loginRes = await fetch('http://localhost:5000/api/auth/login', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
+              ...fetchOptions,
               body: JSON.stringify({ email: formData.email, password: formData.password })
             });
-            const user = await loginRes.json();
-            if (loginRes.ok && onAuth) onAuth(user);
+
+            let userData;
+            const loginContentType = loginRes.headers.get("content-type");
+            if (loginContentType && loginContentType.indexOf("application/json") !== -1) {
+              userData = await loginRes.json();
+            } else {
+              userData = { message: await loginRes.text() };
+            }
+
+            if (loginRes.ok && onAuth) onAuth(userData);
             setTimeout(() => {
               setMessage(null);
               onNavigate('home');
@@ -62,26 +81,33 @@ function Login({ onNavigate, onAuth }) {
         } else {
           // Login
           const res = await fetch('http://localhost:5000/api/auth/login', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            ...fetchOptions,
             body: JSON.stringify({ email: formData.email, password: formData.password })
           });
-          const user = await res.json();
+
+          let data;
+          const contentType = res.headers.get("content-type");
+          if (contentType && contentType.indexOf("application/json") !== -1) {
+            data = await res.json();
+          } else {
+            data = { message: await res.text() };
+          }
+
           if (res.ok && onAuth) {
             setMessage('Login successful');
-            onAuth(user);
+            onAuth(data);
             setTimeout(() => {
               setMessage(null);
               onNavigate('home');
             }, 900);
           } else {
-            setError(user || 'Login failed');
+            setError(data.message || 'Login failed');
             setTimeout(() => setError(null), 4000);
           }
         }
       } catch (err) {
         console.error('Auth error', err);
-        setError('Authentication error');
+        setError('Authentication error: ' + (err.message || 'Unknown error'));
         setTimeout(() => setError(null), 4000);
       }
     };
@@ -95,20 +121,20 @@ function Login({ onNavigate, onAuth }) {
         <motion.div className="login-header" variants={fadeInUp} transition={{ duration: 0.45, ease: 'easeOut' }}>
           <motion.h1 className="login-title" key={`title-${isSignUp ? 'signup' : 'signin'}`} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.35, ease: 'easeOut' }}>{isSignUp ? 'Create Account' : 'Welcome Back'}</motion.h1>
           <motion.p className="login-subtitle" key={`subtitle-${isSignUp ? 'signup' : 'signin'}`} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.35, ease: 'easeOut' }}>
-            {isSignUp 
-              ? 'Join MindCare and start your wellness journey' 
+            {isSignUp
+              ? 'Join MindCare and start your wellness journey'
               : 'Sign in to continue your mental wellness journey'}
           </motion.p>
         </motion.div>
 
         <motion.form className="login-form" onSubmit={handleSubmit} variants={fadeInUp} transition={{ duration: 0.4, ease: 'easeOut' }}>
           {message && (
-            <div className="login-toast success" style={{background:'#d4edda',color:'#155724',padding:'10px',borderRadius:6,marginBottom:12}}>
+            <div className="login-toast success" style={{ background: '#d4edda', color: '#155724', padding: '10px', borderRadius: 6, marginBottom: 12 }}>
               {message}
             </div>
           )}
           {error && (
-            <div className="login-toast error" style={{background:'#fdecea',color:'#721c24',padding:'10px',borderRadius:6,marginBottom:12}}>
+            <div className="login-toast error" style={{ background: '#fdecea', color: '#721c24', padding: '10px', borderRadius: 6, marginBottom: 12 }}>
               {error}
             </div>
           )}
@@ -123,17 +149,17 @@ function Login({ onNavigate, onAuth }) {
                 exit={{ opacity: 0, y: -10 }}
                 transition={{ duration: 0.3, ease: 'easeOut' }}
               >
-              <label htmlFor="name">Full Name</label>
-              <input
-                type="text"
-                id="name"
-                name="name"
-                className="form-input"
-                placeholder="Enter your name"
-                value={formData.name}
-                onChange={handleInputChange}
-                required
-              />
+                <label htmlFor="name">Full Name</label>
+                <input
+                  type="text"
+                  id="name"
+                  name="name"
+                  className="form-input"
+                  placeholder="Enter your name"
+                  value={formData.name}
+                  onChange={handleInputChange}
+                  required
+                />
               </motion.div>
             )}
           </AnimatePresence>
@@ -177,17 +203,17 @@ function Login({ onNavigate, onAuth }) {
                 exit={{ opacity: 0, y: -10 }}
                 transition={{ duration: 0.3, ease: 'easeOut' }}
               >
-              <label htmlFor="confirmPassword">Confirm Password</label>
-              <input
-                type="password"
-                id="confirmPassword"
-                name="confirmPassword"
-                className="form-input"
-                placeholder="Confirm your password"
-                value={formData.confirmPassword}
-                onChange={handleInputChange}
-                required
-              />
+                <label htmlFor="confirmPassword">Confirm Password</label>
+                <input
+                  type="password"
+                  id="confirmPassword"
+                  name="confirmPassword"
+                  className="form-input"
+                  placeholder="Confirm your password"
+                  value={formData.confirmPassword}
+                  onChange={handleInputChange}
+                  required
+                />
               </motion.div>
             )}
           </AnimatePresence>
@@ -212,8 +238,8 @@ function Login({ onNavigate, onAuth }) {
         <motion.div className="login-toggle" variants={fadeInUp} transition={{ duration: 0.35, ease: 'easeOut' }}>
           <p>
             {isSignUp ? 'Already have an account?' : "Don't have an account?"}
-            <button 
-              type="button" 
+            <button
+              type="button"
               className="link-button"
               onClick={() => setIsSignUp(!isSignUp)}
             >
@@ -221,8 +247,8 @@ function Login({ onNavigate, onAuth }) {
             </button>
           </p>
           <p className="admin-login-link">
-            <button 
-              type="button" 
+            <button
+              type="button"
               className="link-button admin-link"
               onClick={() => onNavigate('admin-login')}
             >
@@ -233,8 +259,8 @@ function Login({ onNavigate, onAuth }) {
 
         <motion.div className="login-footer" variants={fadeInUp} transition={{ duration: 0.35, ease: 'easeOut' }}>
           <p className="disclaimer">
-            By continuing, you agree to our Terms of Service and Privacy Policy. 
-            This tool is for educational purposes only and is not a substitute for 
+            By continuing, you agree to our Terms of Service and Privacy Policy.
+            This tool is for educational purposes only and is not a substitute for
             professional mental health care.
           </p>
         </motion.div>

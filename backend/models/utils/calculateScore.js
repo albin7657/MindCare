@@ -1,20 +1,18 @@
-// utils/calculateScore.js
-export const calculateScores = (answers) => {
+import Category from "../Category.js";
 
-  let domainScores = {};
-  let totalScore = 0;
+/**
+ * Maps a score to a category for a given assessment type.
+ * @param {String} assessment_type_id 
+ * @param {Number} score 
+ */
+export const getCategoryForScore = async (assessment_type_id, score) => {
+  const categories = await Category.find({ assessment_type_id });
 
-  answers.forEach(a => {
+  for (const category of categories) {
+    if (score >= category.min_score && score <= category.max_score) {
+      return category;
+    }
+  }
 
-    const domain = a.question_id.domain_id._id;
-
-    if(!domainScores[domain])
-      domainScores[domain] = 0;
-
-    domainScores[domain] += a.points_awarded;
-
-    totalScore += a.points_awarded;
-  });
-
-  return { domainScores, totalScore };
+  return null;
 };

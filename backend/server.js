@@ -1,39 +1,69 @@
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
+import helmet from "helmet";
+import rateLimit from "express-rate-limit";
 import connectDB from "./config/db.js";
-import questionRoutes from "./routes/questionRoutes.js";
-import domainsRoutes from "./routes/domainsRoutes.js";
+
+// Routes
 import authRoutes from "./routes/authRoutes.js";
 import adminRoutes from "./routes/adminRoutes.js";
-import optionRoutes from "./routes/optionRoutes.js";
-import optionSetRoutes from "./routes/optionSetRoutes.js";
+import domainsRoutes from "./routes/domainsRoutes.js";
 import assessmentTypeRoutes from "./routes/assessmentTypeRoutes.js";
 import assessmentAttemptsRoutes from "./routes/assessmentAttemptsRoutes.js";
-
-//import resultRoutes from "./routes/resultRoutes.js";
-
+import questionRoutes from "./routes/questionRoutes.js";
+import optionRoutes from "./routes/optionRoutes.js"; // RESTORED
 
 dotenv.config();
+if (!process.env.MONGO_URI) {
+  dotenv.config({ path: 'backend/.env' });
+}
+if (!process.env.MONGO_URI) {
+  dotenv.config({ path: '.env' });
+}
 
 const app = express();
+
+// Connect to Database
+connectDB();
+
+// Security Middleware
+app.use(helmet());
 app.use(cors());
 app.use(express.json());
+
+// Rate Limiting
+// const limiter = rateLimit({
+//   windowMs: 15 * 60 * 1000,
+//   max: 500, // Increased for development
+//   message: { message: "Too many requests from this IP, please try again in 15 minutes." }
+// });
+// app.use("/api/", limiter);
+
+// Routes Middleware - RESTORED ORIGINAL PATHS
 app.use("/api/auth", authRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/domains", domainsRoutes);
 app.use("/api/assessment-types", assessmentTypeRoutes);
 app.use("/api/assessment-attempts", assessmentAttemptsRoutes);
 app.use("/api/questions", questionRoutes);
-app.use("/api/option-sets", optionSetRoutes);
 app.use("/api/options", optionRoutes);
-//app.use("/api/results", resultRoutes);
 
-
-
-connectDB();
-
-app.listen(5000, () => {
-  console.log("Server running on port 5000");
+// Root Endpoint
+app.get("/", (req, res) => {
+  res.send("MindCare API is running...");
 });
 
+// Error Handling
+app.use((err, req, res, next) => {
+  const statusCode = res.statusCode === 200 ? 500 : res.statusCode;
+  res.status(statusCode).json({
+    message: err.message,
+    stack: process.env.NODE_ENV === "production" ? null : err.stack
+  });
+});
+
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});

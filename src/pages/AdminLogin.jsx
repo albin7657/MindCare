@@ -17,14 +17,31 @@ function AdminLogin({ onLogin, onNavigate }) {
     setError('');
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    // Check admin credentials
-    if (credentials.username === 'team10admin' && credentials.password === '123') {
-      onLogin();
-    } else {
-      setError('Invalid username or password');
+    setError('');
+
+    try {
+      const res = await fetch('http://localhost:5000/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: credentials.username, password: credentials.password })
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        if (data.role === 'admin') {
+          onLogin(data);
+        } else {
+          setError('Access denied: Unauthorized role');
+        }
+      } else {
+        setError(data.message || 'Invalid username or password');
+      }
+    } catch (err) {
+      console.error('Admin login error:', err);
+      setError('Connection error. Please try again.');
     }
   };
 
@@ -80,8 +97,8 @@ function AdminLogin({ onLogin, onNavigate }) {
         </form>
 
         <div className="admin-footer">
-          <button 
-            type="button" 
+          <button
+            type="button"
             className="link-button"
             onClick={() => onNavigate('login')}
           >
@@ -92,31 +109,7 @@ function AdminLogin({ onLogin, onNavigate }) {
     </div>
   );
 }
-const handleSubmit = async (e) => {
-  e.preventDefault();
 
-  try {
-    const res = await fetch("http://localhost:5000/api/admin/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        email: credentials.username, // using username field as email
-        password: credentials.password
-      })
-    });
-
-    const data = await res.json();
-
-    if (res.ok) {
-      onLogin(data);
-    } else {
-      setError(data);
-    }
-
-  } catch (err) {
-    setError("Server error");
-  }
-};
 
 
 export default AdminLogin;

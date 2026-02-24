@@ -76,9 +76,17 @@ function Screen3({ answers, optionalData, onUpdate, onOptionalUpdate, showValida
               questionNumber={index + 17}
               question={question.question_text}
               scale={scale}
-              selectedValue={answers[`q${index + 17}`]}
-              onSelect={(value) => onUpdate({ [`q${index + 17}`]: value })}
-              isUnanswered={showValidation && answers[`q${index + 17}`] === undefined}
+              selectedValue={answers[question._id]?.points}
+              onSelect={(value) => {
+                const selectedOption = question.options.find(opt => opt.points === value);
+                onUpdate({
+                  [question._id]: {
+                    points: value,
+                    option_id: selectedOption?._id
+                  }
+                });
+              }}
+              isUnanswered={showValidation && answers[question._id] === undefined}
             />
           );
         })}

@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import bcrypt from "bcryptjs";
 import Counter from "./counter.js";
 
 
@@ -25,6 +26,11 @@ AdminSchema.pre("save", async function () {
   this.admin_id =
     "ADM" + String(counter.seq).padStart(3, "0");
 });
+
+// Method to compare password
+AdminSchema.methods.comparePassword = async function (enteredPassword) {
+  return await bcrypt.compare(enteredPassword, this.password);
+};
 
 const Admin = mongoose.model("Admin", AdminSchema);
 

@@ -1,9 +1,12 @@
 import mongoose from "mongoose";
 
 const CategorySchema = new mongoose.Schema({
-  category_name: String,
-  min_score: Number,
-  max_score: Number
+  assessment_type_id: { type: mongoose.Schema.Types.ObjectId, ref: "AssessmentType", required: true },
+  min_score: { type: Number, required: true },
+  max_score: { type: Number, required: true },
+  label: { type: String, required: true },
+  recommendation_text: String
 });
 
-export default mongoose.model("Category", CategorySchema);
+const Category = mongoose.model("Category", CategorySchema);
+export default Category;

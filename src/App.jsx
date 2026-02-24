@@ -25,15 +25,16 @@ function App() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ user: currentUser, answers: results })
       });
-      return await res.json();
+      const data = await res.json();
+      return data;
     } catch (err) {
       console.error('Error saving attempt:', err);
-      return null;
+      return { success: false };
     }
   };
 
   const renderPage = () => {
-    switch(currentPage) {
+    switch (currentPage) {
       case 'home':
         return <Home onStartTest={() => setCurrentPage('test-selection')} onNavigate={setCurrentPage} />;
       case 'home2':
@@ -42,9 +43,13 @@ function App() {
         return <TestSelection onStartCombinedTest={() => setCurrentPage('questionnaire')} onStartSpecificTest={(testId) => setCurrentPage(`test-${testId}`)} />;
       case 'questionnaire':
         return <Questionnaire onComplete={async (results) => {
-          setQuizResults(results);
-          await saveAttemptToServer(results);
-          setCurrentPage('results');
+          const response = await saveAttemptToServer(results);
+          if (response && response.success) {
+            setQuizResults(response.results);
+            setCurrentPage('results');
+          } else {
+            alert('Failed to save assessment. Please try again.');
+          }
         }} onBack={() => setCurrentPage('home')} />;
 
       case 'tests': // fallback composite
@@ -55,31 +60,46 @@ function App() {
       case 'test-burnout':
       case 'test-sleep':
         return <Questionnaire onComplete={async (results) => {
-          setQuizResults(results);
-          await saveAttemptToServer(results);
-          setCurrentPage('results');
+          const response = await saveAttemptToServer(results);
+          if (response && response.success) {
+            setQuizResults(response.results);
+            setCurrentPage('results');
+          } else {
+            alert('Failed to save assessment. Please try again.');
+          }
         }} onBack={() => setCurrentPage('test-selection')} />;
       case 'about':
         return <About />;
       case 'contact':
         return <Contact />;
       case 'login':
-        return <Login onNavigate={setCurrentPage} onAuth={setCurrentUser} />;
+        return <Login onNavigate={setCurrentPage} onAuth={(user) => {
+          setCurrentUser(user);
+          if (user.role === 'admin') {
+            setIsAdminAuthenticated(true);
+            setCurrentPage('admin-dashboard');
+          } else {
+            setCurrentPage('home');
+          }
+        }} />;
       case 'admin-login':
-        return <AdminLogin onLogin={() => {
+        return <AdminLogin onLogin={(user) => {
           setIsAdminAuthenticated(true);
+          setCurrentUser(user);
           setCurrentPage('admin-dashboard');
         }} onNavigate={setCurrentPage} />;
       case 'admin-dashboard':
         if (!isAdminAuthenticated) {
           setCurrentPage('admin-login');
-          return <AdminLogin onLogin={() => {
+          return <AdminLogin onLogin={(user) => {
             setIsAdminAuthenticated(true);
+            setCurrentUser(user);
             setCurrentPage('admin-dashboard');
           }} onNavigate={setCurrentPage} />;
         }
-        return <AdminDashboard onLogout={() => {
+        return <AdminDashboard currentUser={currentUser} onLogout={() => {
           setIsAdminAuthenticated(false);
+          setCurrentUser(null);
           setCurrentPage('home');
         }} />;
       case 'results':
@@ -99,17 +119,16 @@ function App() {
       {currentPage !== 'admin-dashboard' && currentPage !== 'admin-login' && (
         <Navbar currentPage={currentPage} setCurrentPage={setCurrentPage} currentUser={currentUser} onLogout={handleLogout} />
       )}
-      <main className={`main-content ${
-        currentPage !== 'home' && 
-        currentPage !== 'home2' && 
-        currentPage !== 'test-selection' && 
+      <main className={`main-content ${currentPage !== 'home' &&
+        currentPage !== 'home2' &&
+        currentPage !== 'test-selection' &&
         currentPage !== 'tests' &&
-        currentPage !== 'login' && 
-        currentPage !== 'about' && 
+        currentPage !== 'login' &&
+        currentPage !== 'about' &&
         currentPage !== 'contact' &&
         currentPage !== 'admin-login' &&
         currentPage !== 'admin-dashboard' ? 'with-padding' : ''
-      }`}>
+        }`}>
         {renderPage()}
       </main>
     </div>

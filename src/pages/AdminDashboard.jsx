@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { FaUsers, FaChartBar, FaQuestionCircle, FaCog, FaSignOutAlt, FaPlus, FaTrash, FaEdit, FaHistory, FaCalculator, FaChevronDown, FaArrowLeft, FaBars, FaTimes } from 'react-icons/fa';
 import './AdminDashboard.css';
 
-function AdminDashboard({ onLogout }) {
+function AdminDashboard({ currentUser, onLogout }) {
   const [activeTab, setActiveTab] = useState('overview');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [assessmentTypes, setAssessmentTypes] = useState([]);
@@ -12,8 +12,8 @@ function AdminDashboard({ onLogout }) {
       name: 'Stress',
       color: '#FF8F8F',
       questions: [
-        { 
-          text: "In the last month, how often have you felt nervous and stressed?", 
+        {
+          text: "In the last month, how often have you felt nervous and stressed?",
           weight: 1,
           options: [
             { value: 0, label: 'Never' },
@@ -23,8 +23,8 @@ function AdminDashboard({ onLogout }) {
             { value: 4, label: 'Almost Always' }
           ]
         },
-        { 
-          text: "In the last month, how often have you found that you could not cope with all the things that you had to do?", 
+        {
+          text: "In the last month, how often have you found that you could not cope with all the things that you had to do?",
           weight: 1,
           options: [
             { value: 0, label: 'Never' },
@@ -34,8 +34,8 @@ function AdminDashboard({ onLogout }) {
             { value: 4, label: 'Almost Always' }
           ]
         },
-        { 
-          text: "You feel that too many demands are being made on you", 
+        {
+          text: "You feel that too many demands are being made on you",
           weight: 1,
           options: [
             { value: 0, label: 'Never' },
@@ -45,8 +45,8 @@ function AdminDashboard({ onLogout }) {
             { value: 4, label: 'Almost Always' }
           ]
         },
-        { 
-          text: "You have many worries", 
+        {
+          text: "You have many worries",
           weight: 1,
           options: [
             { value: 0, label: 'Never' },
@@ -104,6 +104,7 @@ function AdminDashboard({ onLogout }) {
     }
   ]);
 
+
   const [editingQuestion, setEditingQuestion] = useState(null);
   // weight is fixed at 1, no input provided
   const [newQuestion, setNewQuestion] = useState({ domainId: '', assessment_type_id: '', text: '' });
@@ -112,7 +113,7 @@ function AdminDashboard({ onLogout }) {
   const [selectedDomain, setSelectedDomain] = useState(null); // For navigating to domain detail view
   const [expandedQuestion, setExpandedQuestion] = useState(null);
   const [newOption, setNewOption] = useState({ value: '', label: '' });
-  
+
   // Scoring thresholds (editable)
   const [scoringThresholds, setScoringThresholds] = useState({
     low: { max: 24.99, label: 'Low', color: '#48bb78' },
@@ -121,7 +122,7 @@ function AdminDashboard({ onLogout }) {
     high: { min: 75, label: 'High', color: '#FF8F8F' }
   });
   const [editingThresholds, setEditingThresholds] = useState(false);
-  
+
   // Mock data for test history with hardcoded details
   const [testHistory, setTestHistory] = useState([
     {
@@ -253,7 +254,7 @@ function AdminDashboard({ onLogout }) {
                 } catch (e) {
                   console.error('Failed fetching options for question', qId, e);
                 }
-                
+
                 // Handle assessment_type_id - it could be an object (populated) or a string (ID)
                 let assessmentTypeId = null;
                 if (typeof q.assessment_type_id === 'object' && q.assessment_type_id !== null) {
@@ -261,13 +262,13 @@ function AdminDashboard({ onLogout }) {
                 } else if (typeof q.assessment_type_id === 'string') {
                   assessmentTypeId = q.assessment_type_id;
                 }
-                
-                return { 
-                  id: qId, 
-                  text: q.question_text || q.text || '', 
-                  weight: q.weight || 1, 
+
+                return {
+                  id: qId,
+                  text: q.question_text || q.text || '',
+                  weight: q.weight || 1,
                   assessment_type_id: assessmentTypeId,
-                  options 
+                  options
                 };
               }));
             }
@@ -364,7 +365,6 @@ function AdminDashboard({ onLogout }) {
 
     calculateAverages();
   }, [domains]);
-
   useEffect(() => {
     const handleResize = () => {
       if (window.innerWidth > 768) {
@@ -381,6 +381,7 @@ function AdminDashboard({ onLogout }) {
     setIsMobileMenuOpen(false);
   };
 
+
   // Mock data for testing statistics
   const mockStats = {
     totalTests: 0,
@@ -396,9 +397,9 @@ function AdminDashboard({ onLogout }) {
 
   const handleEditQuestion = (domainId, index) => {
     const domain = domains.find(d => d.id === domainId);
-    setEditingQuestion({ 
-      domainId, 
-      index, 
+    setEditingQuestion({
+      domainId,
+      index,
       text: domain.questions[index].text
       // weight is fixed, no need to store
     });
@@ -414,7 +415,10 @@ function AdminDashboard({ onLogout }) {
         if (q && q.id) {
           const res = await fetch(`http://localhost:5000/api/questions/${q.id}`, {
             method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${currentUser?.token}`
+            },
             body: JSON.stringify({ question_text: text })
           });
           if (!res.ok) throw new Error('Failed to update question');
@@ -453,11 +457,14 @@ function AdminDashboard({ onLogout }) {
       try {
         const res = await fetch('http://localhost:5000/api/questions', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ 
-            domain_id: newQuestion.domainId, 
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${currentUser?.token}`
+          },
+          body: JSON.stringify({
+            domain_id: newQuestion.domainId,
             assessment_type_id: newQuestion.assessment_type_id,
-            question_text: newQuestion.text, 
+            question_text: newQuestion.text,
             weight: 1 // fixed default weight
           })
         });
@@ -473,15 +480,15 @@ function AdminDashboard({ onLogout }) {
 
         setDomains(prev => prev.map(d => {
           if (d.id === newQuestion.domainId) {
-            const q = { 
-              id: created._id || created.id, 
-              text: created.question_text || created.text, 
-              weight: created.weight || 1, 
+            const q = {
+              id: created._id || created.id,
+              text: created.question_text || created.text,
+              weight: created.weight || 1,
               assessment_type_id: created.assessment_type_id,
-              options: created.options || [] 
+              options: created.options || []
             };
-            return { 
-              ...d, 
+            return {
+              ...d,
               questions: [...d.questions, q],
               questionsByAssessment: {
                 ...d.questionsByAssessment,
@@ -527,7 +534,10 @@ function AdminDashboard({ onLogout }) {
           return;
         }
 
-        const res = await fetch(`http://localhost:5000/api/questions/${question.id}`, { method: 'DELETE' });
+        const res = await fetch(`http://localhost:5000/api/questions/${question.id}`, {
+          method: 'DELETE',
+          headers: { 'Authorization': `Bearer ${currentUser?.token}` }
+        });
         if (!res.ok) throw new Error('Failed to delete question');
 
         setDomains(prev => prev.map(d => {
@@ -555,13 +565,16 @@ function AdminDashboard({ onLogout }) {
   const handleAddDomain = () => {
     (async () => {
       if (!newDomain.name.trim()) return setAlert({ type: 'error', message: 'Enter domain name' });
-      
+
       try {
         const res = await fetch('http://localhost:5000/api/domains', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ 
-            domain_name: newDomain.name, 
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${currentUser?.token}`
+          },
+          body: JSON.stringify({
+            domain_name: newDomain.name,
             color: newDomain.color
           })
         });
@@ -570,10 +583,10 @@ function AdminDashboard({ onLogout }) {
           return setAlert({ type: 'error', message: error.error || 'Failed to create domain' });
         }
         const created = await res.json();
-        
-        const d = { 
-          id: created._id || created.id, 
-          name: created.domain_name || created.name || newDomain.name, 
+
+        const d = {
+          id: created._id || created.id,
+          name: created.domain_name || created.name || newDomain.name,
           color: created.color || newDomain.color,
           questions: [],
           questionsByAssessment: {}
@@ -594,7 +607,10 @@ function AdminDashboard({ onLogout }) {
 
     (async () => {
       try {
-        const res = await fetch(`http://localhost:5000/api/domains/${domainId}`, { method: 'DELETE' });
+        const res = await fetch(`http://localhost:5000/api/domains/${domainId}`, {
+          method: 'DELETE',
+          headers: { 'Authorization': `Bearer ${currentUser?.token}` }
+        });
         if (!res.ok) throw new Error('Failed to delete domain');
         setDomains(prev => prev.filter(d => d.id !== domainId));
         setAlert({ type: 'success', message: 'Domain deleted successfully' });
@@ -641,7 +657,10 @@ function AdminDashboard({ onLogout }) {
 
         const res = await fetch('http://localhost:5000/api/options', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${currentUser?.token}`
+          },
           body: JSON.stringify({
             question_id: question.id,
             option_text: newOption.label,
@@ -678,7 +697,10 @@ function AdminDashboard({ onLogout }) {
     if (!window.confirm('Delete this option?')) return;
     (async () => {
       try {
-        const res = await fetch(`http://localhost:5000/api/options/${optionId}`, { method: 'DELETE' });
+        const res = await fetch(`http://localhost:5000/api/options/${optionId}`, {
+          method: 'DELETE',
+          headers: { 'Authorization': `Bearer ${currentUser?.token}` }
+        });
         if (!res.ok) throw new Error('Failed to delete option');
 
         setDomains(prev => prev.map(d => {
@@ -710,7 +732,7 @@ function AdminDashboard({ onLogout }) {
   const renderOverview = () => (
     <div className="overview-section">
       <h2 className="section-title">Dashboard Overview</h2>
-      
+
       <div className="stats-grid">
         <div className="stat-card">
           <div className="stat-icon" style={{ background: '#13283A' }}>
@@ -764,9 +786,9 @@ function AdminDashboard({ onLogout }) {
             const maxScore = calculateMaxScoreByAssessmentType(domain, type._id);
             return maxScore > 0;
           });
-          
+
           if (!hasQuestions) return null;
-          
+
           return (
             <div key={domain.id} className="domain-score-group">
               <h4 className="domain-score-title" style={{ color: domain.color }}>{domain.name}</h4>
@@ -774,12 +796,12 @@ function AdminDashboard({ onLogout }) {
                 {assessmentTypes.map(type => {
                   const maxScore = calculateMaxScoreByAssessmentType(domain, type._id);
                   if (maxScore === 0) return null;
-                  
+
                   // Get average score from fetched data
                   const scoreKey = `${domain.id}-${type._id}`;
                   const avgScore = averageScores[scoreKey] || 0;
                   const percentage = maxScore > 0 ? (avgScore / maxScore) * 100 : 0;
-                  
+
                   return (
                     <div key={type._id} className="score-item assessment-score-item">
                       <span className="score-label">{type.name}</span>
@@ -821,8 +843,8 @@ function AdminDashboard({ onLogout }) {
               <span className="domain-color-badge" style={{ backgroundColor: domain.color }}></span>
               {domain.name}
             </h2>
-            <button 
-              className="btn-delete-domain" 
+            <button
+              className="btn-delete-domain"
               onClick={() => {
                 if (window.confirm(`Delete entire ${domain.name} domain and all its questions?`)) {
                   handleDeleteDomain(domain.id);
@@ -858,7 +880,7 @@ function AdminDashboard({ onLogout }) {
               // Skip if assessment type not found
               if (!assessmentType) return null;
               const assessmentTypeName = assessmentType?.name || 'Unknown';
-              
+
               return (
                 <div key={assessmentTypeId} className="assessment-group">
                   <h4 className="assessment-group-title">{assessmentTypeName} Assessment</h4>
@@ -869,7 +891,7 @@ function AdminDashboard({ onLogout }) {
                       const questionKey = `${domain.id}-${originalIndex}`;
                       const isExpanded = expandedQuestion === questionKey;
                       const options = getQuestionOptions(domain.id, originalIndex);
-                      
+
                       return (
                         <div key={question.id} className={`question-item ${isExpanded ? 'question-item-expanded' : ''}`}>
                           {editingQuestion?.domainId === domain.id && editingQuestion?.index === originalIndex ? (
@@ -903,55 +925,55 @@ function AdminDashboard({ onLogout }) {
                                   <FaTrash />
                                 </button>
                               </div>
-                      
-                      {isExpanded && (
-                        <div className="question-options-container">
-                          <div className="options-header">
-                            <h4>Answer Options ({options.length} options)</h4>
-                          </div>
-                          
-                          <div className="options-list">
-                            {options.map((option, optIdx) => (
-                              <div key={optIdx} className="option-item">
-                                <span className="option-value-badge">{option.points || option.value || 0}</span>
-                                <span className="option-label-display">{option.option_text || option.label || ''}</span>
-                                <button 
-                                  className="btn-option-delete" 
-                                  onClick={() => handleDeleteOption(domain.id, originalIndex, option._id || option.id)}
-                                  title="Delete option"
-                                >
-                                  <FaTrash />
-                                </button>
-                              </div>
-                            ))}
-                          </div>
-                          
-                          <div className="add-option-form">
-                            <input
-                              type="number"
-                              value={newOption.value}
-                              onChange={(e) => setNewOption({ ...newOption, value: e.target.value })}
-                              placeholder="Points"
-                              className="option-value-input"
-                            />
-                            <input
-                              type="text"
-                              value={newOption.label}
-                              onChange={(e) => setNewOption({ ...newOption, label: e.target.value })}
-                              placeholder="Option Text"
-                              className="option-label-input"
-                            />
-                            <button 
-                              className="btn-add-option" 
-                              onClick={() => handleAddOption(domain.id, originalIndex)}
-                            >
-                              <FaPlus /> Add Option
-                            </button>
-                          </div>
-                        </div>
-                      )}
-                    </>
-                  )}
+
+                              {isExpanded && (
+                                <div className="question-options-container">
+                                  <div className="options-header">
+                                    <h4>Answer Options ({options.length} options)</h4>
+                                  </div>
+
+                                  <div className="options-list">
+                                    {options.map((option, optIdx) => (
+                                      <div key={optIdx} className="option-item">
+                                        <span className="option-value-badge">{option.points || option.value || 0}</span>
+                                        <span className="option-label-display">{option.option_text || option.label || ''}</span>
+                                        <button
+                                          className="btn-option-delete"
+                                          onClick={() => handleDeleteOption(domain.id, originalIndex, option._id || option.id)}
+                                          title="Delete option"
+                                        >
+                                          <FaTrash />
+                                        </button>
+                                      </div>
+                                    ))}
+                                  </div>
+
+                                  <div className="add-option-form">
+                                    <input
+                                      type="number"
+                                      value={newOption.value}
+                                      onChange={(e) => setNewOption({ ...newOption, value: e.target.value })}
+                                      placeholder="Points"
+                                      className="option-value-input"
+                                    />
+                                    <input
+                                      type="text"
+                                      value={newOption.label}
+                                      onChange={(e) => setNewOption({ ...newOption, label: e.target.value })}
+                                      placeholder="Option Text"
+                                      className="option-label-input"
+                                    />
+                                    <button
+                                      className="btn-add-option"
+                                      onClick={() => handleAddOption(domain.id, originalIndex)}
+                                    >
+                                      <FaPlus /> Add Option
+                                    </button>
+                                  </div>
+                                </div>
+                              )}
+                            </>
+                          )}
                         </div>
                       );
                     })}
@@ -1004,7 +1026,7 @@ function AdminDashboard({ onLogout }) {
       <div className="questions-section">
         <h2 className="section-title">Domain Management</h2>
         <p className="section-subtitle">Select a domain to view and edit its questions</p>
-        
+
         <div className="add-domain-container">
           {showAddDomain ? (
             <div className="add-domain-form">
@@ -1034,9 +1056,9 @@ function AdminDashboard({ onLogout }) {
 
         <div className="domains-grid">
           {domains.map((domain) => (
-            <div 
-              key={domain.id} 
-              className="domain-card" 
+            <div
+              key={domain.id}
+              className="domain-card"
               onClick={() => setSelectedDomain(domain.id)}
               style={{ borderTopColor: domain.color }}
             >
@@ -1075,7 +1097,7 @@ function AdminDashboard({ onLogout }) {
   const renderScoring = () => (
     <div className="scoring-section">
       <h2 className="section-title">Scoring Logic</h2>
-      
+
       <div className="scoring-info">
         <div className="scoring-card">
           <h3>Scale Values</h3>
@@ -1123,7 +1145,7 @@ function AdminDashboard({ onLogout }) {
               </button>
             )}
           </div>
-          
+
           {editingThresholds ? (
             <div className="threshold-editor">
               <div className="threshold-input-group">
@@ -1143,7 +1165,7 @@ function AdminDashboard({ onLogout }) {
                 />
                 <span>%</span>
               </div>
-              
+
               <div className="threshold-input-group">
                 <label style={{ color: scoringThresholds.mild.color }}>
                   <strong>{scoringThresholds.mild.label}:</strong>
@@ -1173,7 +1195,7 @@ function AdminDashboard({ onLogout }) {
                 />
                 <span>%</span>
               </div>
-              
+
               <div className="threshold-input-group">
                 <label style={{ color: scoringThresholds.moderate.color }}>
                   <strong>{scoringThresholds.moderate.label}:</strong>
@@ -1203,7 +1225,7 @@ function AdminDashboard({ onLogout }) {
                 />
                 <span>%</span>
               </div>
-              
+
               <div className="threshold-input-group">
                 <label style={{ color: scoringThresholds.high.color }}>
                   <strong>{scoringThresholds.high.label}:</strong> Greater than or equal to
@@ -1261,7 +1283,7 @@ function AdminDashboard({ onLogout }) {
       if (filterDomain !== 'all' && !test.domains.map(d => d.toLowerCase()).includes(filterDomain.toLowerCase())) {
         return false;
       }
-      
+
       // Filter by status
       if (filterStatus !== 'all') {
         const scoreEntries = Object.entries(test.scores);
@@ -1271,14 +1293,14 @@ function AdminDashboard({ onLogout }) {
           return false;
         }
       }
-      
+
       return true;
     });
 
     // Apply sorting
     filteredData = [...filteredData].sort((a, b) => {
       let comparison = 0;
-      
+
       if (sortBy === 'date') {
         comparison = new Date(a.date) - new Date(b.date);
       } else if (sortBy === 'userId') {
@@ -1288,137 +1310,137 @@ function AdminDashboard({ onLogout }) {
         const avgB = Object.values(b.scores).reduce((sum, score) => sum + score, 0) / Object.values(b.scores).length;
         comparison = avgA - avgB;
       }
-      
+
       return sortOrder === 'asc' ? comparison : -comparison;
     });
 
     return (
-    <div className="test-history-section">
-      <h2 className="section-title">Test Submission History</h2>
-      
-      <div className="history-stats">
-        <div className="history-stat-card">
-          <FaUsers />
-          <div>
-            <h3>{testHistory.length}</h3>
-            <p>Total Submissions</p>
+      <div className="test-history-section">
+        <h2 className="section-title">Test Submission History</h2>
+
+        <div className="history-stats">
+          <div className="history-stat-card">
+            <FaUsers />
+            <div>
+              <h3>{testHistory.length}</h3>
+              <p>Total Submissions</p>
+            </div>
+          </div>
+          <div className="history-stat-card">
+            <FaHistory />
+            <div>
+              <h3>{testHistory.filter(t => t.date.startsWith('2026-02-05')).length}</h3>
+              <p>Today's Tests</p>
+            </div>
+          </div>
+          <div className="history-stat-card">
+            <FaChartBar />
+            <div>
+              <h3>{new Set(testHistory.map(t => t.userId)).size}</h3>
+              <p>Unique Users</p>
+            </div>
           </div>
         </div>
-        <div className="history-stat-card">
-          <FaHistory />
-          <div>
-            <h3>{testHistory.filter(t => t.date.startsWith('2026-02-05')).length}</h3>
-            <p>Today's Tests</p>
+
+        {/* Sorting and Filtering Controls */}
+        <div className="history-controls">
+          <div className="control-group">
+            <label>Sort By:</label>
+            <select value={sortBy} onChange={(e) => setSortBy(e.target.value)} className="history-select">
+              <option value="date">Date & Time</option>
+              <option value="userId">User ID</option>
+              <option value="avgScore">Average Score</option>
+            </select>
+
+            <select value={sortOrder} onChange={(e) => setSortOrder(e.target.value)} className="history-select">
+              <option value="desc">Descending</option>
+              <option value="asc">Ascending</option>
+            </select>
+          </div>
+
+          <div className="control-group">
+            <label>Filter by Domain:</label>
+            <select value={filterDomain} onChange={(e) => setFilterDomain(e.target.value)} className="history-select">
+              <option value="all">All Domains</option>
+              {domains.map(domain => (
+                <option key={domain.id} value={domain.name}>{domain.name}</option>
+              ))}
+            </select>
+          </div>
+
+          <div className="control-group">
+            <label>Filter by Status:</label>
+            <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)} className="history-select">
+              <option value="all">All Statuses</option>
+              <option value="low">Low</option>
+              <option value="mild">Mild</option>
+              <option value="moderate">Moderate</option>
+              <option value="high">High</option>
+            </select>
           </div>
         </div>
-        <div className="history-stat-card">
-          <FaChartBar />
-          <div>
-            <h3>{new Set(testHistory.map(t => t.userId)).size}</h3>
-            <p>Unique Users</p>
-          </div>
-        </div>
-      </div>
 
-      {/* Sorting and Filtering Controls */}
-      <div className="history-controls">
-        <div className="control-group">
-          <label>Sort By:</label>
-          <select value={sortBy} onChange={(e) => setSortBy(e.target.value)} className="history-select">
-            <option value="date">Date & Time</option>
-            <option value="userId">User ID</option>
-            <option value="avgScore">Average Score</option>
-          </select>
-          
-          <select value={sortOrder} onChange={(e) => setSortOrder(e.target.value)} className="history-select">
-            <option value="desc">Descending</option>
-            <option value="asc">Ascending</option>
-          </select>
-        </div>
-
-        <div className="control-group">
-          <label>Filter by Domain:</label>
-          <select value={filterDomain} onChange={(e) => setFilterDomain(e.target.value)} className="history-select">
-            <option value="all">All Domains</option>
-            {domains.map(domain => (
-              <option key={domain.id} value={domain.name}>{domain.name}</option>
-            ))}
-          </select>
-        </div>
-
-        <div className="control-group">
-          <label>Filter by Status:</label>
-          <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)} className="history-select">
-            <option value="all">All Statuses</option>
-            <option value="low">Low</option>
-            <option value="mild">Mild</option>
-            <option value="moderate">Moderate</option>
-            <option value="high">High</option>
-          </select>
-        </div>
-      </div>
-
-      <div className="test-history-table-container">
-        <table className="test-history-table">
-          <thead>
-            <tr>
-              <th>Date & Time</th>
-              <th>User ID</th>
-              <th>Domains Tested</th>
-              <th>Scores</th>
-              <th>Overall Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredData.length === 0 ? (
+        <div className="test-history-table-container">
+          <table className="test-history-table">
+            <thead>
               <tr>
-                <td colSpan="5" className="no-data">No test submissions match the selected filters</td>
+                <th>Date & Time</th>
+                <th>User ID</th>
+                <th>Domains Tested</th>
+                <th>Scores</th>
+                <th>Overall Status</th>
               </tr>
-            ) : (
-              filteredData.map((test) => {
-              const scoreEntries = Object.entries(test.scores);
-              const avgPercentage = scoreEntries.reduce((sum, [domain, score]) => sum + score, 0) / scoreEntries.length;
-              const level = getScoreLevel(avgPercentage);
-              
-              return (
-                <tr key={test.id}>
-                  <td className="date-cell">{test.date}</td>
-                  <td className="user-cell">{test.userId}</td>
-                  <td className="domains-cell">
-                    <div className="domain-tags">
-                      {test.domains.map((domain, idx) => (
-                        <span key={idx} className="domain-tag">{domain}</span>
-                      ))}
-                    </div>
-                  </td>
-                  <td className="scores-cell">
-                    <div className="score-details">
-                      {scoreEntries.map(([domain, score]) => (
-                        <div key={domain} className="score-chip">
-                          <span className="score-domain">{domain}:</span>
-                          <span className="score-value">{score}%</span>
-                        </div>
-                      ))}
-                    </div>
-                  </td>
-                  <td className="status-cell">
-                    <span 
-                      className="status-badge" 
-                      style={{ backgroundColor: level.color, color: 'white' }}
-                    >
-                      {level.label}
-                    </span>
-                    <span className="avg-score">{avgPercentage.toFixed(1)}%</span>
-                  </td>
+            </thead>
+            <tbody>
+              {filteredData.length === 0 ? (
+                <tr>
+                  <td colSpan="5" className="no-data">No test submissions match the selected filters</td>
                 </tr>
-              );
-            })
-            )}
-          </tbody>
-        </table>
+              ) : (
+                filteredData.map((test) => {
+                  const scoreEntries = Object.entries(test.scores);
+                  const avgPercentage = scoreEntries.reduce((sum, [domain, score]) => sum + score, 0) / scoreEntries.length;
+                  const level = getScoreLevel(avgPercentage);
+
+                  return (
+                    <tr key={test.id}>
+                      <td className="date-cell">{test.date}</td>
+                      <td className="user-cell">{test.userId}</td>
+                      <td className="domains-cell">
+                        <div className="domain-tags">
+                          {test.domains.map((domain, idx) => (
+                            <span key={idx} className="domain-tag">{domain}</span>
+                          ))}
+                        </div>
+                      </td>
+                      <td className="scores-cell">
+                        <div className="score-details">
+                          {scoreEntries.map(([domain, score]) => (
+                            <div key={domain} className="score-chip">
+                              <span className="score-domain">{domain}:</span>
+                              <span className="score-value">{score}%</span>
+                            </div>
+                          ))}
+                        </div>
+                      </td>
+                      <td className="status-cell">
+                        <span
+                          className="status-badge"
+                          style={{ backgroundColor: level.color, color: 'white' }}
+                        >
+                          {level.label}
+                        </span>
+                        <span className="avg-score">{avgPercentage.toFixed(1)}%</span>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
-    </div>
-  );
+    );
   };
 
   return (
@@ -1441,27 +1463,27 @@ function AdminDashboard({ onLogout }) {
         <div className="admin-brand">
           <h2>MindCare Admin</h2>
         </div>
-        
+
         <nav className="admin-nav">
-          <button 
+          <button
             className={`nav-item ${activeTab === 'overview' ? 'active' : ''}`}
             onClick={() => handleTabChange('overview')}
           >
             <FaChartBar /> Dashboard
           </button>
-          <button 
+          <button
             className={`nav-item ${activeTab === 'history' ? 'active' : ''}`}
             onClick={() => handleTabChange('history')}
           >
             <FaHistory /> Test History
           </button>
-          <button 
+          <button
             className={`nav-item ${activeTab === 'questions' ? 'active' : ''}`}
             onClick={() => handleTabChange('questions')}
           >
             <FaQuestionCircle /> Questions
           </button>
-          <button 
+          <button
             className={`nav-item ${activeTab === 'scoring' ? 'active' : ''}`}
             onClick={() => handleTabChange('scoring')}
           >
