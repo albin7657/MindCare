@@ -229,11 +229,43 @@ router.post("/", async (req, res) => {
 // @desc    Get average scores (RESTORED FRONTEND COMPATIBILITY)
 router.get("/analytics/averages", async (req, res) => {
   try {
-    const attempts = await AssessmentAttempt.find();
-    res.json({});
+    // join attempts with their score documents and unwind domain_scores
+    const results = await AssessmentAttempt.aggregate([
+      {
+        $lookup: {
+          from: "scores",
+          localField: "_id",
+          foreignField: "attempt_id",
+          as: "scoreDoc"
+        }
+      },
+      { $unwind: "$scoreDoc" },
+      { $unwind: "$scoreDoc.domain_scores" },
+      {
+        $group: {
+          _id: {
+            domain: "$scoreDoc.domain_scores.domain_id",
+            type: "$assessment_type_id"
+          },
+          avgScore: { $avg: "$scoreDoc.domain_scores.score" }
+        }
+      }
+    ]);
+
+    // transform aggregation into frontend-friendly map
+    const averages = {};
+    results.forEach(r => {
+      const domainId = r._id.domain.toString();
+      const typeId = r._id.type.toString();
+      averages[`${domainId}-${typeId}`] = r.avgScore;
+    });
+
+    res.json(averages);
   } catch (err) {
+    console.error('Error computing averages:', err);
     res.status(500).json({ error: "Error fetching averages" });
   }
 });
 
 export default router;
+

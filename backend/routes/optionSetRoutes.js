@@ -35,10 +35,10 @@ router.post("/", async (req, res) => {
 router.get("/", async (req, res) => {
   try {
     const optionSets = await OptionSet.find();
-    
+
     const setsWithOptions = await Promise.all(
       optionSets.map(async (set) => {
-        const options = await Option.find({ option_set_id: set._id }).sort({ order: 1 });
+        const options = await Option.find({ option_set_id: set._id, question_id: null }).sort({ order: 1 });
         return {
           ...set.toObject(),
           options
@@ -62,7 +62,7 @@ router.get("/:id", async (req, res) => {
       return res.status(404).json({ error: "Option set not found" });
     }
 
-    const options = await Option.find({ option_set_id: optionSet._id }).sort({ order: 1 });
+    const options = await Option.find({ option_set_id: optionSet._id, question_id: null }).sort({ order: 1 });
 
     res.json({
       ...optionSet.toObject(),
@@ -103,7 +103,7 @@ router.delete("/:id", async (req, res) => {
   try {
     // Delete all options in this set
     await Option.deleteMany({ option_set_id: req.params.id });
-    
+
     // Delete the option set
     const deletedSet = await OptionSet.findByIdAndDelete(req.params.id);
 

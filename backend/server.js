@@ -13,6 +13,7 @@ import assessmentTypeRoutes from "./routes/assessmentTypeRoutes.js";
 import assessmentAttemptsRoutes from "./routes/assessmentAttemptsRoutes.js";
 import questionRoutes from "./routes/questionRoutes.js";
 import optionRoutes from "./routes/optionRoutes.js"; // RESTORED
+import optionSetRoutes from "./routes/optionSetRoutes.js";
 import categoryRoutes from "./routes/categoryRoutes.js";
 
 dotenv.config();
@@ -49,6 +50,7 @@ app.use("/api/assessment-types", assessmentTypeRoutes);
 app.use("/api/assessment-attempts", assessmentAttemptsRoutes);
 app.use("/api/questions", questionRoutes);
 app.use("/api/options", optionRoutes);
+app.use("/api/option-sets", optionSetRoutes);
 app.use("/api/categories", categoryRoutes);
 
 // Root Endpoint

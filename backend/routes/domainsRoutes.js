@@ -8,6 +8,7 @@ const router = express.Router();
 
 // GET questions with options by multiple domain names (RESTORED FRONTEND ROUTE)
 router.get("/questions-by-domains/:domainNames", async (req, res) => {
+  console.log('GET questions-by-domains hit with:', req.params.domainNames);
   try {
     const domainNamesStr = decodeURIComponent(req.params.domainNames);
     const domainNames = domainNamesStr.split(',').map(name => name.trim());
@@ -26,12 +27,13 @@ router.get("/questions-by-domains/:domainNames", async (req, res) => {
     // Transform to include options from OptionSet
     const questionsWithOptions = await Promise.all(
       questions.map(async (question) => {
-        let options = [];
-        if (question.option_set_id) {
-          options = await Option.find({ option_set_id: question.option_set_id }).sort({ order: 1 });
-        } else {
-          // Fallback if someone still uses question_id (legacy/migration)
-          options = await Option.find({ question_id: question._id });
+        // Fetch options specifically for this question
+        let options = await Option.find({ question_id: question._id }).sort({ order: 1 });
+
+        // Fallback: If no question-specific options exist, check if we can fetch from the OptionSet template
+        if (options.length === 0 && question.option_set_id) {
+          // Fetch options that belong to the set but are NOT assigned to a specific question (template options)
+          options = await Option.find({ option_set_id: question.option_set_id, question_id: null }).sort({ order: 1 });
         }
 
         return {
@@ -47,8 +49,12 @@ router.get("/questions-by-domains/:domainNames", async (req, res) => {
 
     res.json(questionsWithOptions);
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Failed to fetch questions" });
+    console.error('ERROR FETCHING QUESTIONS:', err);
+    res.status(500).json({
+      error: "Failed to fetch questions",
+      details: err.message,
+      stack: err.stack
+    });
   }
 });
 

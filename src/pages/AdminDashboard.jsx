@@ -107,12 +107,12 @@ function AdminDashboard({ currentUser, onLogout }) {
 
   const [editingQuestion, setEditingQuestion] = useState(null);
   // weight is fixed at 1, no input provided
-  const [newQuestion, setNewQuestion] = useState({ domainId: '', assessment_type_id: '', text: '' });
+  const [newQuestion, setNewQuestion] = useState({ domainId: '', assessment_type_id: '', text: '', option_set_id: '' });
   const [newDomain, setNewDomain] = useState({ name: '', color: '#3498db' });
   const [showAddDomain, setShowAddDomain] = useState(false);
   const [selectedDomain, setSelectedDomain] = useState(null); // For navigating to domain detail view
   const [expandedQuestion, setExpandedQuestion] = useState(null);
-  const [newOption, setNewOption] = useState({ value: '', label: '' });
+  const [optionSets, setOptionSets] = useState([]);
 
   // Scoring thresholds (fetched from DB)
   const [categories, setCategories] = useState([]);
@@ -153,6 +153,21 @@ function AdminDashboard({ currentUser, onLogout }) {
       }
     };
     fetchAssessmentTypes();
+  }, []);
+
+  // Fetch option sets on mount
+  useEffect(() => {
+    const fetchOptionSets = async () => {
+      try {
+        const res = await fetch('http://localhost:5000/api/option-sets');
+        if (!res.ok) throw new Error('Failed fetching option sets');
+        const data = await res.json();
+        setOptionSets(data);
+      } catch (err) {
+        console.error('Error fetching option sets:', err);
+      }
+    };
+    fetchOptionSets();
   }, []);
 
   // Fetch categories on mount
@@ -345,16 +360,8 @@ function AdminDashboard({ currentUser, onLogout }) {
 
     calculateAverages();
   }, [domains]);
-  useEffect(() => {
-    const handleResize = () => {
-      if (window.innerWidth > 768) {
-        setIsMobileMenuOpen(false);
-      }
-    };
+  // Removed automatic menu closing on resize to support unified drawer sidebar on all screen sizes
 
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
 
   const handleTabChange = (tab) => {
     setActiveTab(tab);
@@ -429,6 +436,7 @@ function AdminDashboard({ currentUser, onLogout }) {
       if (!newQuestion.domainId) return setAlert({ type: 'error', message: 'Domain is not set' });
       if (!newQuestion.text.trim()) return setAlert({ type: 'error', message: 'Enter question text' });
       if (!newQuestion.assessment_type_id) return setAlert({ type: 'error', message: 'Select assessment type' });
+      if (!newQuestion.option_set_id) return setAlert({ type: 'error', message: 'Select an option set' });
       try {
         const res = await fetch('http://localhost:5000/api/questions', {
           method: 'POST',
@@ -440,6 +448,7 @@ function AdminDashboard({ currentUser, onLogout }) {
             domain_id: newQuestion.domainId,
             assessment_type_id: newQuestion.assessment_type_id,
             question_text: newQuestion.text,
+            option_set_id: newQuestion.option_set_id,
             weight: 1 // fixed default weight
           })
         });
@@ -447,11 +456,20 @@ function AdminDashboard({ currentUser, onLogout }) {
         if (!res.ok) {
           const error = await res.json();
           console.error('Create question response error:', error);
-          return setAlert({ type: 'error', message: error.error || 'Failed to create question' });
+          return setAlert({ type: 'error', message: error.message || error.error || 'Failed to create question' });
         }
         const created = await res.json();
 
         console.log('Question created on server:', created);
+
+        // Fetch the auto-created options for this question from the backend
+        let createdOptions = [];
+        try {
+          const oRes = await fetch(`http://localhost:5000/api/options/question/${created._id || created.id}`);
+          if (oRes.ok) createdOptions = await oRes.json();
+        } catch (e) {
+          console.error('Failed fetching options for new question', e);
+        }
 
         setDomains(prev => prev.map(d => {
           if (d.id === newQuestion.domainId) {
@@ -460,7 +478,7 @@ function AdminDashboard({ currentUser, onLogout }) {
               text: created.question_text || created.text,
               weight: created.weight || 1,
               assessment_type_id: created.assessment_type_id,
-              options: created.options || []
+              options: createdOptions
             };
             return {
               ...d,
@@ -474,8 +492,8 @@ function AdminDashboard({ currentUser, onLogout }) {
           return d;
         }));
 
-        setNewQuestion({ domainId: '', assessment_type_id: '', text: '' });
-        setAlert({ type: 'success', message: 'Question added successfully' });
+        setNewQuestion({ domainId: newQuestion.domainId, assessment_type_id: '', text: '', option_set_id: '' });
+        setAlert({ type: 'success', message: 'Question added successfully with options from the selected option set' });
       } catch (err) {
         console.error('Add question error', err);
         setAlert({ type: 'error', message: 'Failed to add question' });
@@ -782,46 +800,36 @@ function AdminDashboard({ currentUser, onLogout }) {
         </div>
       </div>
 
-      <h3 className="subsection-title">Average Scores by Domain & Assessment Type</h3>
-      <div className="scores-grid-container">
+      <h3 className="subsection-title">Average Scores by Domain</h3>
+      <div className="scores-flat-card">
         {domains.map((domain) => {
-          const hasQuestions = assessmentTypes.some(type => {
-            const maxScore = calculateMaxScoreByAssessmentType(domain, type._id);
-            return maxScore > 0;
-          });
+          const totalQuestions = domain.questions ? domain.questions.length : 0;
+          if (totalQuestions === 0) return null;
 
-          if (!hasQuestions) return null;
+          // Calculate total max score and average score across all assessment types
+          const maxScore = domain.questions.reduce((sum, q) => sum + (q.weight || 1) * 4, 0);
+          const avgScore = assessmentTypes.reduce((total, type) => {
+            const scoreKey = `${domain.id}-${type._id}`;
+            return total + (averageScores[scoreKey] || 0);
+          }, 0);
+          const clampedAvg = Math.min(avgScore, maxScore);
+          const percentage = maxScore > 0 ? (clampedAvg / maxScore) * 100 : 0;
 
           return (
-            <div key={domain.id} className="domain-score-group">
-              <h4 className="domain-score-title" style={{ color: domain.color }}>{domain.name}</h4>
-              <div className="assessment-scores">
-                {assessmentTypes.map(type => {
-                  const maxScore = calculateMaxScoreByAssessmentType(domain, type._id);
-                  if (maxScore === 0) return null;
-
-                  // Get average score from fetched data
-                  const scoreKey = `${domain.id}-${type._id}`;
-                  const avgScore = averageScores[scoreKey] || 0;
-                  const percentage = maxScore > 0 ? (avgScore / maxScore) * 100 : 0;
-
-                  return (
-                    <div key={type._id} className="score-item assessment-score-item">
-                      <span className="score-label">{type.name}</span>
-                      <span className="score-value">{avgScore.toFixed(1)}/{maxScore}</span>
-                      <div className="score-bar">
-                        <div className="score-fill" style={{ width: `${percentage}%`, background: domain.color }}></div>
-                      </div>
-                    </div>
-                  );
-                })}
+            <div key={domain.id} className="score-item">
+              <span className="score-label">{domain.name}</span>
+              <span className="score-value">{clampedAvg.toFixed(1)}/{maxScore}</span>
+              <div className="score-bar">
+                <div className="score-fill" style={{ width: `${percentage}%`, background: domain.color }} />
               </div>
+              <span className="score-q-count">{totalQuestions} questions</span>
             </div>
           );
         })}
       </div>
     </div>
   );
+
 
   const renderQuestions = () => {
     // If a domain is selected, show the domain detail view
@@ -933,45 +941,20 @@ function AdminDashboard({ currentUser, onLogout }) {
                                 <div className="question-options-container">
                                   <div className="options-header">
                                     <h4>Answer Options ({options.length} options)</h4>
+                                    <span className="options-source-note">Auto-fetched from Option Set</span>
                                   </div>
 
                                   <div className="options-list">
-                                    {options.map((option, optIdx) => (
-                                      <div key={optIdx} className="option-item">
-                                        <span className="option-value-badge">{option.points || option.value || 0}</span>
-                                        <span className="option-label-display">{option.option_text || option.label || ''}</span>
-                                        <button
-                                          className="btn-option-delete"
-                                          onClick={() => handleDeleteOption(domain.id, originalIndex, option._id || option.id)}
-                                          title="Delete option"
-                                        >
-                                          <FaTrash />
-                                        </button>
-                                      </div>
-                                    ))}
-                                  </div>
-
-                                  <div className="add-option-form">
-                                    <input
-                                      type="number"
-                                      value={newOption.value}
-                                      onChange={(e) => setNewOption({ ...newOption, value: e.target.value })}
-                                      placeholder="Points"
-                                      className="option-value-input"
-                                    />
-                                    <input
-                                      type="text"
-                                      value={newOption.label}
-                                      onChange={(e) => setNewOption({ ...newOption, label: e.target.value })}
-                                      placeholder="Option Text"
-                                      className="option-label-input"
-                                    />
-                                    <button
-                                      className="btn-add-option"
-                                      onClick={() => handleAddOption(domain.id, originalIndex)}
-                                    >
-                                      <FaPlus /> Add Option
-                                    </button>
+                                    {options.length === 0 ? (
+                                      <p className="no-options-note">No options found for this question.</p>
+                                    ) : (
+                                      options.map((option, optIdx) => (
+                                        <div key={optIdx} className="option-item">
+                                          <span className="option-value-badge">{option.points || option.value || 0}</span>
+                                          <span className="option-label-display">{option.option_text || option.label || ''}</span>
+                                        </div>
+                                      ))
+                                    )}
                                   </div>
                                 </div>
                               )}
@@ -1001,6 +984,37 @@ function AdminDashboard({ currentUser, onLogout }) {
                   </option>
                 ))}
               </select>
+
+              <select
+                value={newQuestion.domainId === domain.id ? newQuestion.option_set_id : ''}
+                onChange={(e) => setNewQuestion({ ...newQuestion, domainId: domain.id, option_set_id: e.target.value })}
+                className="assessment-type-select"
+              >
+                <option value="">Select Option Set</option>
+                {optionSets.map((set) => (
+                  <option key={set._id} value={set._id}>
+                    {set.set_name} ({set.options?.length ?? 0} options)
+                  </option>
+                ))}
+              </select>
+
+              {/* Preview options from the selected option set */}
+              {newQuestion.domainId === domain.id && newQuestion.option_set_id && (() => {
+                const preview = optionSets.find(s => s._id === newQuestion.option_set_id);
+                return preview ? (
+                  <div className="option-set-preview">
+                    <p className="option-set-preview-label">Options that will be applied:</p>
+                    <div className="option-set-preview-list">
+                      {preview.options.map((opt, idx) => (
+                        <span key={idx} className="option-preview-chip">
+                          <strong>{opt.points}</strong> — {opt.option_text}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                ) : null;
+              })()}
+
               <textarea
                 value={newQuestion.domainId === domain.id ? newQuestion.text : ''}
                 onChange={(e) => setNewQuestion({ ...newQuestion, domainId: domain.id, text: e.target.value })}
@@ -1010,11 +1024,8 @@ function AdminDashboard({ currentUser, onLogout }) {
               {/* weight input removed - questions will use default weight of 1 */}
               <button
                 className="btn btn-primary"
-                onClick={() => {
-                  handleAddQuestion();
-                  setNewQuestion({ domainId: domain.id, assessment_type_id: '', text: '' });
-                }}
-                disabled={!(newQuestion.text.trim() && newQuestion.assessment_type_id)}
+                onClick={handleAddQuestion}
+                disabled={!(newQuestion.domainId === domain.id && newQuestion.text.trim() && newQuestion.assessment_type_id && newQuestion.option_set_id)}
               >
                 <FaPlus /> Add Question
               </button>

@@ -1,6 +1,7 @@
 import express from "express";
 import Question from "../models/Question.js";
 import Option from "../models/Option.js";
+import OptionSet from "../models/OptionSet.js";
 import { protect, admin } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
@@ -15,19 +16,41 @@ router.get("/domain/:domainId", async (req, res) => {
   }
 });
 
-// Create question with options
+// Create question – options are auto-copied from the chosen OptionSet
 router.post("/", protect, admin, async (req, res) => {
   try {
-    const { domain_id, assessment_type_id, question_text, order, weight, options } = req.body;
+    const { domain_id, assessment_type_id, question_text, order, weight, option_set_id } = req.body;
 
-    const question = new Question({ domain_id, assessment_type_id, question_text, order, weight });
+    if (!option_set_id) {
+      return res.status(400).json({ message: "option_set_id is required" });
+    }
+
+    // Verify the option set exists
+    const optionSet = await OptionSet.findById(option_set_id);
+    if (!optionSet) {
+      return res.status(404).json({ message: "OptionSet not found" });
+    }
+
+    // Create the question with the option_set_id reference
+    const question = new Question({
+      domain_id,
+      assessment_type_id,
+      question_text,
+      order,
+      weight,
+      option_set_id
+    });
     await question.save();
 
-    if (options && Array.isArray(options)) {
-      const optionDocs = options.map(opt => ({
+    // Auto-copy only 'template' options (those where question_id is null) for this OptionSet
+    const sourceOptions = await Option.find({ option_set_id, question_id: null }).sort({ order: 1 });
+    if (sourceOptions.length > 0) {
+      const optionDocs = sourceOptions.map(opt => ({
         question_id: question._id,
-        option_text: opt.option_text || opt.label, // Handle both formats
-        points: opt.points || opt.value || 0
+        option_set_id: opt.option_set_id,
+        option_text: opt.option_text,
+        points: opt.points,
+        order: opt.order
       }));
       await Option.insertMany(optionDocs);
     }
