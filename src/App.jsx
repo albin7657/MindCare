@@ -17,6 +17,8 @@ function App() {
   const [quizResults, setQuizResults] = useState(null);
   const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
+  // when redirected to login for a specialized test, remember where to go after auth
+  const [pendingPage, setPendingPage] = useState(null);
 
   const saveAttemptToServer = async (results) => {
     try {
@@ -30,6 +32,21 @@ function App() {
     } catch (err) {
       console.error('Error saving attempt:', err);
       return { success: false };
+    }
+  };
+
+  // central auth handler which also consumes pendingPage
+  const handleAuth = (user) => {
+    setCurrentUser(user);
+    if (user.role === 'admin') {
+      setIsAdminAuthenticated(true);
+      // admin always goes to dashboard regardless of pending
+      setCurrentPage('admin-dashboard');
+    } else if (pendingPage) {
+      setCurrentPage(pendingPage);
+      setPendingPage(null);
+    } else {
+      setCurrentPage('home');
     }
   };
 
@@ -59,6 +76,12 @@ function App() {
       case 'test-depression':
       case 'test-burnout':
       case 'test-sleep':
+        // make sure user is signed in before showing specialized test
+        if (!currentUser) {
+          setPendingPage(currentPage);
+          setCurrentPage('login');
+          return null; // will re-render as login
+        }
         return <Questionnaire onComplete={async (results) => {
           const response = await saveAttemptToServer(results);
           if (response && response.success) {
@@ -67,21 +90,12 @@ function App() {
           } else {
             alert('Failed to save assessment. Please try again.');
           }
-        }} onBack={() => setCurrentPage('test-selection')} />;
-      case 'about':
+        }} onBack={() => setCurrentPage('test-selection')} />;      case 'about':
         return <About />;
       case 'contact':
         return <Contact />;
       case 'login':
-        return <Login onNavigate={setCurrentPage} onAuth={(user) => {
-          setCurrentUser(user);
-          if (user.role === 'admin') {
-            setIsAdminAuthenticated(true);
-            setCurrentPage('admin-dashboard');
-          } else {
-            setCurrentPage('home');
-          }
-        }} />;
+        return <Login onNavigate={setCurrentPage} onAuth={handleAuth} />;
       case 'admin-login':
         return <AdminLogin onLogin={(user) => {
           setIsAdminAuthenticated(true);

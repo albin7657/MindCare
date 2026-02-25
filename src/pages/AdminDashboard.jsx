@@ -6,103 +6,7 @@ function AdminDashboard({ currentUser, onLogout }) {
   const [activeTab, setActiveTab] = useState('overview');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [assessmentTypes, setAssessmentTypes] = useState([]);
-  const [domains, setDomains] = useState([
-    {
-      id: 'stress',
-      name: 'Stress',
-      color: '#FF8F8F',
-      questions: [
-        {
-          text: "In the last month, how often have you felt nervous and stressed?",
-          weight: 1,
-          options: [
-            { value: 0, label: 'Never' },
-            { value: 1, label: 'Rarely' },
-            { value: 2, label: 'Sometimes' },
-            { value: 3, label: 'Often' },
-            { value: 4, label: 'Almost Always' }
-          ]
-        },
-        {
-          text: "In the last month, how often have you found that you could not cope with all the things that you had to do?",
-          weight: 1,
-          options: [
-            { value: 0, label: 'Never' },
-            { value: 1, label: 'Rarely' },
-            { value: 2, label: 'Sometimes' },
-            { value: 3, label: 'Often' },
-            { value: 4, label: 'Almost Always' }
-          ]
-        },
-        {
-          text: "You feel that too many demands are being made on you",
-          weight: 1,
-          options: [
-            { value: 0, label: 'Never' },
-            { value: 1, label: 'Rarely' },
-            { value: 2, label: 'Sometimes' },
-            { value: 3, label: 'Often' },
-            { value: 4, label: 'Almost Always' }
-          ]
-        },
-        {
-          text: "You have many worries",
-          weight: 1,
-          options: [
-            { value: 0, label: 'Never' },
-            { value: 1, label: 'Rarely' },
-            { value: 2, label: 'Sometimes' },
-            { value: 3, label: 'Often' },
-            { value: 4, label: 'Almost Always' }
-          ]
-        }
-      ]
-    },
-    {
-      id: 'anxiety',
-      name: 'Anxiety',
-      color: '#f6ad55',
-      questions: [
-        { text: "I experienced breathing difficulty (e.g. excessively rapid breathing, breathlessness in the absence of physical exertion)", weight: 1 },
-        { text: "I felt I was close to panic", weight: 1 },
-        { text: "In the last three months, have you found that it's hard to stop yourself from worrying?", weight: 1 },
-        { text: "Feeling afraid, as if something awful might happen", weight: 1 }
-      ]
-    },
-    {
-      id: 'depression',
-      name: 'Depression',
-      color: '#9f7aea',
-      questions: [
-        { text: "I couldn't seem to experience any positive feeling at all", weight: 1 },
-        { text: "I found it difficult to work up the initiative to do things", weight: 1 },
-        { text: "I felt that I had nothing to look forward to", weight: 1 },
-        { text: "I felt down-hearted and blue", weight: 1 }
-      ]
-    },
-    {
-      id: 'burnout',
-      name: 'Burnout',
-      color: '#ed8936',
-      questions: [
-        { text: "I feel like a failure", weight: 1 },
-        { text: "I feel emotionally exhausted from my work/studies", weight: 1 },
-        { text: "I feel used up at the end of the day", weight: 1 },
-        { text: "I feel burned out from my work/studies", weight: 1 }
-      ]
-    },
-    {
-      id: 'sleep',
-      name: 'Sleep Quality',
-      color: '#4299e1',
-      questions: [
-        { text: "During the past month, how would you rate your sleep quality overall?", weight: 0.75 },
-        { text: "During the past month, how often have you had trouble sleeping?", weight: 0.75 },
-        { text: "During the past month, how often have you taken medicine to help you sleep?", weight: 0.75 },
-        { text: "During the past month, how often have you had trouble staying awake?", weight: 0.75 }
-      ]
-    }
-  ]);
+  const [domains, setDomains] = useState([])
 
 
   const [editingQuestion, setEditingQuestion] = useState(null);
@@ -642,23 +546,52 @@ function AdminDashboard({ currentUser, onLogout }) {
   };
 
   const handleSaveThresholds = async () => {
+    console.log('handleSaveThresholds triggered', { categories, currentUser });
+    if (!currentUser?.token) {
+      setAlert({ type: 'error', message: 'You must be signed in as an admin to save thresholds' });
+      return;
+    }
+
+    // ensure each category has an id for server to update
+    for (const cat of categories) {
+      if (!cat._id && !cat.id) {
+        setAlert({ type: 'error', message: 'Cannot save thresholds: missing category identifier' });
+        return;
+      }
+    }
+
     try {
-      const res = await fetch('http://localhost:5000/api/categories/bulk', {
+      // explicitly log and reuse the URL so we can inspect network calls
+      const url = 'http://localhost:5000/api/categories/bulk';
+      console.log('saving thresholds to', url);
+      const res = await fetch(url, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${currentUser?.token}`
+          'Authorization': `Bearer ${currentUser.token}`
         },
         body: JSON.stringify({ categories })
       });
 
-      if (!res.ok) throw new Error('Failed to save thresholds');
+      if (!res.ok) {
+        // peek at body for debugging
+        const text = await res.text();
+        console.error('threshold save response not ok', res.status, text);
+        let errMsg = `Request failed (${res.status})`;
+        try {
+          const data = JSON.parse(text);
+          if (data && data.message) errMsg = data.message;
+        } catch (e) {
+          if (text) errMsg += ` - ${text}`;
+        }
+        throw new Error(errMsg);
+      }
 
       setEditingThresholds(false);
       setAlert({ type: 'success', message: 'Thresholds updated successfully' });
     } catch (err) {
       console.error('Save thresholds error:', err);
-      setAlert({ type: 'error', message: 'Failed to update thresholds' });
+      setAlert({ type: 'error', message: `Failed to update thresholds: ${err.message}` });
     }
   };
 
