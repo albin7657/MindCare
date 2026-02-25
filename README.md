@@ -59,7 +59,7 @@ MindCare is a production-ready web application designed to monitor and support s
 
 ## 📈 Analytics & Flow
 1. **Student Registration**: Users register and can immediately take a General Assessment.
-2. **Logic Engine**: Scores are totaled across domains; categories (Low/Moderate/High) are assigned.
+2. **Logic Engine**: Scores are totaled across domains; categories (Low/Medium/High) are assigned.
 3. **Recommendations**: If specific triggers are met, the system gently suggests specialized tests (Stress, Sleep, etc.).
 4. **Admin Panel**: Admins can manage the content and view system-wide analytics on student wellness trends.
 

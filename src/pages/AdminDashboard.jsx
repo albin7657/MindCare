@@ -114,88 +114,13 @@ function AdminDashboard({ currentUser, onLogout }) {
   const [expandedQuestion, setExpandedQuestion] = useState(null);
   const [newOption, setNewOption] = useState({ value: '', label: '' });
 
-  // Scoring thresholds (editable)
-  const [scoringThresholds, setScoringThresholds] = useState({
-    low: { max: 24.99, label: 'Low', color: '#48bb78' },
-    mild: { min: 25, max: 49.99, label: 'Mild', color: '#f6ad55' },
-    moderate: { min: 50, max: 74.99, label: 'Moderate', color: '#ed8936' },
-    high: { min: 75, label: 'High', color: '#FF8F8F' }
-  });
+  // Scoring thresholds (fetched from DB)
+  const [categories, setCategories] = useState([]);
   const [editingThresholds, setEditingThresholds] = useState(false);
 
-  // Mock data for test history with hardcoded details
-  const [testHistory, setTestHistory] = useState([
-    {
-      id: 1,
-      date: '2026-02-05 14:30',
-      userId: 'User_7821',
-      domains: ['Stress', 'Anxiety', 'Depression'],
-      scores: { stress: 75, anxiety: 68, depression: 45 }
-    },
-    {
-      id: 2,
-      date: '2026-02-05 13:15',
-      userId: 'User_4392',
-      domains: ['Burnout', 'Sleep Quality'],
-      scores: { burnout: 82, sleep: 71 }
-    },
-    {
-      id: 3,
-      date: '2026-02-05 11:45',
-      userId: 'User_9153',
-      domains: ['Stress', 'Anxiety', 'Depression', 'Burnout', 'Sleep Quality'],
-      scores: { stress: 34, anxiety: 41, depression: 29, burnout: 38, sleep: 52 }
-    },
-    {
-      id: 4,
-      date: '2026-02-05 10:20',
-      userId: 'User_2764',
-      domains: ['Depression', 'Sleep Quality'],
-      scores: { depression: 88, sleep: 79 }
-    },
-    {
-      id: 5,
-      date: '2026-02-05 09:00',
-      userId: 'User_5418',
-      domains: ['Stress', 'Anxiety'],
-      scores: { stress: 22, anxiety: 18 }
-    },
-    {
-      id: 6,
-      date: '2026-02-04 16:30',
-      userId: 'User_6127',
-      domains: ['Burnout'],
-      scores: { burnout: 91 }
-    },
-    {
-      id: 7,
-      date: '2026-02-04 15:10',
-      userId: 'User_8839',
-      domains: ['Stress', 'Anxiety', 'Depression', 'Burnout'],
-      scores: { stress: 56, anxiety: 63, depression: 48, burnout: 67 }
-    },
-    {
-      id: 8,
-      date: '2026-02-04 13:45',
-      userId: 'User_1205',
-      domains: ['Sleep Quality'],
-      scores: { sleep: 33 }
-    },
-    {
-      id: 9,
-      date: '2026-02-04 11:20',
-      userId: 'User_7492',
-      domains: ['Stress', 'Depression'],
-      scores: { stress: 44, depression: 51 }
-    },
-    {
-      id: 10,
-      date: '2026-02-04 09:15',
-      userId: 'User_3681',
-      domains: ['Anxiety', 'Burnout', 'Sleep Quality'],
-      scores: { anxiety: 77, burnout: 70, sleep: 65 }
-    }
-  ]);
+  // Real test history from DB
+  const [testHistory, setTestHistory] = useState([]);
+  const [historyLoading, setHistoryLoading] = useState(true);
 
   // Test history sorting and filtering state
   const [sortBy, setSortBy] = useState('date'); // 'date', 'userId', 'avgScore'
@@ -228,6 +153,61 @@ function AdminDashboard({ currentUser, onLogout }) {
       }
     };
     fetchAssessmentTypes();
+  }, []);
+
+  // Fetch categories on mount
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const res = await fetch('http://localhost:5000/api/categories');
+        if (!res.ok) throw new Error('Failed fetching categories');
+        const data = await res.json();
+        setCategories(data);
+      } catch (err) {
+        console.error('Error fetching categories:', err);
+      }
+    };
+    fetchCategories();
+  }, []);
+
+  // Fetch real overview stats
+  useEffect(() => {
+    const fetchAnalytics = async () => {
+      try {
+        const res = await fetch('http://localhost:5000/api/admin/analytics');
+        if (res.ok) {
+          const data = await res.json();
+          setOverviewStats({
+            totalTests: data.totalTests || 0,
+            todayTests: data.todayTests || 0,
+            weekTests: data.weekTests || 0,
+            monthTests: data.monthTests || 0
+          });
+        }
+      } catch (err) {
+        console.error('Error fetching analytics:', err);
+      }
+    };
+    fetchAnalytics();
+  }, []);
+
+  // Fetch real test history
+  useEffect(() => {
+    const fetchTestHistory = async () => {
+      try {
+        setHistoryLoading(true);
+        const res = await fetch('http://localhost:5000/api/admin/test-history');
+        if (res.ok) {
+          const data = await res.json();
+          setTestHistory(data);
+        }
+      } catch (err) {
+        console.error('Error fetching test history:', err);
+      } finally {
+        setHistoryLoading(false);
+      }
+    };
+    fetchTestHistory();
   }, []);
 
   // Fetch domains from backend on mount
@@ -382,18 +362,13 @@ function AdminDashboard({ currentUser, onLogout }) {
   };
 
 
-  // Mock data for testing statistics
-  const mockStats = {
+  // Overview stats from backend
+  const [overviewStats, setOverviewStats] = useState({
     totalTests: 0,
     todayTests: 0,
     weekTests: 0,
-    monthTests: 0,
-    avgStressScore: 0,
-    avgAnxietyScore: 0,
-    avgDepressionScore: 0,
-    avgBurnoutScore: 0,
-    avgSleepScore: 0
-  };
+    monthTests: 0
+  });
 
   const handleEditQuestion = (domainId, index) => {
     const domain = domains.find(d => d.id === domainId);
@@ -631,14 +606,42 @@ function AdminDashboard({ currentUser, onLogout }) {
   };
 
   const getScoreLevel = (percentage) => {
-    if (percentage < scoringThresholds.mild.min) return scoringThresholds.low;
-    if (percentage < scoringThresholds.moderate.min) return scoringThresholds.mild;
-    if (percentage < scoringThresholds.high.min) return scoringThresholds.moderate;
-    return scoringThresholds.high;
+    if (!categories || categories.length === 0) return { label: 'N/A', color: '#ccc' };
+
+    const colors = ['#48bb78', '#f6ad55', '#ed8936', '#FF8F8F'];
+    const matched = categories.find(cat => percentage >= cat.min_score && percentage <= cat.max_score);
+
+    if (matched) {
+      const index = categories.indexOf(matched);
+      return { ...matched, color: colors[index] || '#3498db' };
+    }
+
+    // Fallback logic for gaps
+    if (percentage < categories[0].min_score) return { ...categories[0], color: colors[0] };
+    if (percentage > categories[categories.length - 1].max_score) return { ...categories[categories.length - 1], color: colors[colors.length - 1] };
+
+    return { label: 'Unknown', color: '#ccc' };
   };
 
-  const handleSaveThresholds = () => {
-    setEditingThresholds(false);
+  const handleSaveThresholds = async () => {
+    try {
+      const res = await fetch('http://localhost:5000/api/categories/bulk', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${currentUser?.token}`
+        },
+        body: JSON.stringify({ categories })
+      });
+
+      if (!res.ok) throw new Error('Failed to save thresholds');
+
+      setEditingThresholds(false);
+      setAlert({ type: 'success', message: 'Thresholds updated successfully' });
+    } catch (err) {
+      console.error('Save thresholds error:', err);
+      setAlert({ type: 'error', message: 'Failed to update thresholds' });
+    }
   };
 
   const toggleQuestionExpand = (domainId, index) => {
@@ -740,7 +743,7 @@ function AdminDashboard({ currentUser, onLogout }) {
           </div>
           <div className="stat-content">
             <h3>Total Tests Taken</h3>
-            <p className="stat-number">{mockStats.totalTests}</p>
+            <p className="stat-number">{overviewStats.totalTests}</p>
             <span className="stat-label">All time</span>
           </div>
         </div>
@@ -751,7 +754,7 @@ function AdminDashboard({ currentUser, onLogout }) {
           </div>
           <div className="stat-content">
             <h3>Today's Tests</h3>
-            <p className="stat-number">{mockStats.todayTests}</p>
+            <p className="stat-number">{overviewStats.todayTests}</p>
             <span className="stat-label">Last 24 hours</span>
           </div>
         </div>
@@ -762,7 +765,7 @@ function AdminDashboard({ currentUser, onLogout }) {
           </div>
           <div className="stat-content">
             <h3>This Week</h3>
-            <p className="stat-number">{mockStats.weekTests}</p>
+            <p className="stat-number">{overviewStats.weekTests}</p>
             <span className="stat-label">Last 7 days</span>
           </div>
         </div>
@@ -773,7 +776,7 @@ function AdminDashboard({ currentUser, onLogout }) {
           </div>
           <div className="stat-content">
             <h3>This Month</h3>
-            <p className="stat-number">{mockStats.monthTests}</p>
+            <p className="stat-number">{overviewStats.monthTests}</p>
             <span className="stat-label">Last 30 days</span>
           </div>
         </div>
@@ -1148,124 +1151,63 @@ function AdminDashboard({ currentUser, onLogout }) {
 
           {editingThresholds ? (
             <div className="threshold-editor">
-              <div className="threshold-input-group">
-                <label style={{ color: scoringThresholds.low.color }}>
-                  <strong>{scoringThresholds.low.label}:</strong> Less than
-                </label>
-                <input
-                  type="number"
-                  step="0.01"
-                  value={scoringThresholds.mild.min}
-                  onChange={(e) => setScoringThresholds({
-                    ...scoringThresholds,
-                    low: { ...scoringThresholds.low, max: parseFloat(e.target.value) - 0.01 },
-                    mild: { ...scoringThresholds.mild, min: parseFloat(e.target.value) }
-                  })}
-                  className="threshold-input"
-                />
-                <span>%</span>
-              </div>
+              {categories.map((cat, idx) => {
+                const colors = ['#48bb78', '#f6ad55', '#ed8936', '#FF8F8F'];
+                const cardColor = colors[idx] || '#3498db';
 
-              <div className="threshold-input-group">
-                <label style={{ color: scoringThresholds.mild.color }}>
-                  <strong>{scoringThresholds.mild.label}:</strong>
-                </label>
-                <input
-                  type="number"
-                  step="0.01"
-                  value={scoringThresholds.mild.min}
-                  onChange={(e) => setScoringThresholds({
-                    ...scoringThresholds,
-                    low: { ...scoringThresholds.low, max: parseFloat(e.target.value) - 0.01 },
-                    mild: { ...scoringThresholds.mild, min: parseFloat(e.target.value) }
-                  })}
-                  className="threshold-input"
-                />
-                <span>% -</span>
-                <input
-                  type="number"
-                  step="0.01"
-                  value={scoringThresholds.mild.max}
-                  onChange={(e) => setScoringThresholds({
-                    ...scoringThresholds,
-                    mild: { ...scoringThresholds.mild, max: parseFloat(e.target.value) },
-                    moderate: { ...scoringThresholds.moderate, min: parseFloat(e.target.value) + 0.01 }
-                  })}
-                  className="threshold-input"
-                />
-                <span>%</span>
-              </div>
-
-              <div className="threshold-input-group">
-                <label style={{ color: scoringThresholds.moderate.color }}>
-                  <strong>{scoringThresholds.moderate.label}:</strong>
-                </label>
-                <input
-                  type="number"
-                  step="0.01"
-                  value={scoringThresholds.moderate.min}
-                  onChange={(e) => setScoringThresholds({
-                    ...scoringThresholds,
-                    mild: { ...scoringThresholds.mild, max: parseFloat(e.target.value) - 0.01 },
-                    moderate: { ...scoringThresholds.moderate, min: parseFloat(e.target.value) }
-                  })}
-                  className="threshold-input"
-                />
-                <span>% -</span>
-                <input
-                  type="number"
-                  step="0.01"
-                  value={scoringThresholds.moderate.max}
-                  onChange={(e) => setScoringThresholds({
-                    ...scoringThresholds,
-                    moderate: { ...scoringThresholds.moderate, max: parseFloat(e.target.value) },
-                    high: { ...scoringThresholds.high, min: parseFloat(e.target.value) + 0.01 }
-                  })}
-                  className="threshold-input"
-                />
-                <span>%</span>
-              </div>
-
-              <div className="threshold-input-group">
-                <label style={{ color: scoringThresholds.high.color }}>
-                  <strong>{scoringThresholds.high.label}:</strong> Greater than or equal to
-                </label>
-                <input
-                  type="number"
-                  step="0.01"
-                  value={scoringThresholds.high.min}
-                  onChange={(e) => setScoringThresholds({
-                    ...scoringThresholds,
-                    moderate: { ...scoringThresholds.moderate, max: parseFloat(e.target.value) - 0.01 },
-                    high: { ...scoringThresholds.high, min: parseFloat(e.target.value) }
-                  })}
-                  className="threshold-input"
-                />
-                <span>%</span>
-              </div>
+                return (
+                  <div key={cat._id || idx} className="threshold-input-group">
+                    <label style={{ color: cardColor }}>
+                      <strong>{cat.label}:</strong>
+                    </label>
+                    <input
+                      type="number"
+                      step="1"
+                      value={cat.min_score}
+                      onChange={(e) => {
+                        const newCats = [...categories];
+                        newCats[idx] = { ...newCats[idx], min_score: parseFloat(e.target.value) };
+                        // Automatically update previous max if not the first one
+                        if (idx > 0) {
+                          newCats[idx - 1] = { ...newCats[idx - 1], max_score: parseFloat(e.target.value) - 1 };
+                        }
+                        setCategories(newCats);
+                      }}
+                      className="threshold-input"
+                    />
+                    <span>% -</span>
+                    <input
+                      type="number"
+                      step="1"
+                      value={cat.max_score}
+                      onChange={(e) => {
+                        const newCats = [...categories];
+                        newCats[idx] = { ...newCats[idx], max_score: parseFloat(e.target.value) };
+                        // Automatically update next min if not the last one
+                        if (idx < categories.length - 1) {
+                          newCats[idx + 1] = { ...newCats[idx + 1], min_score: parseFloat(e.target.value) + 1 };
+                        }
+                        setCategories(newCats);
+                      }}
+                      className="threshold-input"
+                    />
+                    <span>%</span>
+                  </div>
+                );
+              })}
             </div>
           ) : (
             <ul className="scoring-list">
-              <li>
-                <strong style={{ color: scoringThresholds.low.color }}>
-                  {scoringThresholds.low.label}:
-                </strong> &lt; {scoringThresholds.low.max.toFixed(2)}%
-              </li>
-              <li>
-                <strong style={{ color: scoringThresholds.mild.color }}>
-                  {scoringThresholds.mild.label}:
-                </strong> {scoringThresholds.mild.min.toFixed(2)}% - {scoringThresholds.mild.max.toFixed(2)}%
-              </li>
-              <li>
-                <strong style={{ color: scoringThresholds.moderate.color }}>
-                  {scoringThresholds.moderate.label}:
-                </strong> {scoringThresholds.moderate.min.toFixed(2)}% - {scoringThresholds.moderate.max.toFixed(2)}%
-              </li>
-              <li>
-                <strong style={{ color: scoringThresholds.high.color }}>
-                  {scoringThresholds.high.label}:
-                </strong> ≥ {scoringThresholds.high.min.toFixed(2)}%
-              </li>
+              {categories.map((cat, idx) => {
+                const colors = ['#48bb78', '#f6ad55', '#ed8936', '#FF8F8F'];
+                return (
+                  <li key={cat._id || idx}>
+                    <strong style={{ color: colors[idx] || '#3498db' }}>
+                      {cat.label}:
+                    </strong> {cat.min_score}% - {cat.max_score}%
+                  </li>
+                );
+              })}
             </ul>
           )}
           <p className="scoring-note">
@@ -1275,44 +1217,39 @@ function AdminDashboard({ currentUser, onLogout }) {
       </div>
     </div>
   );
+  // The extra '};' that was here has been removed.
 
   const renderTestHistory = () => {
-    // Apply filtering
-    let filteredData = testHistory.filter(test => {
-      // Filter by domain
-      if (filterDomain !== 'all' && !test.domains.map(d => d.toLowerCase()).includes(filterDomain.toLowerCase())) {
-        return false;
-      }
+    // sort and filter
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
 
-      // Filter by status
-      if (filterStatus !== 'all') {
-        const scoreEntries = Object.entries(test.scores);
-        const avgPercentage = scoreEntries.reduce((sum, [domain, score]) => sum + score, 0) / scoreEntries.length;
-        const level = getScoreLevel(avgPercentage);
-        if (level.label.toLowerCase() !== filterStatus.toLowerCase()) {
-          return false;
-        }
-      }
-
-      return true;
+    let filtered = testHistory.filter(test => {
+      const domainMatch = filterDomain === 'all' || test.domains.some(d => d.toLowerCase().includes(filterDomain.toLowerCase()));
+      const statusMatch = filterStatus === 'all' || (test.riskLevel || '').toLowerCase().includes(filterStatus.toLowerCase());
+      return domainMatch && statusMatch;
     });
 
-    // Apply sorting
-    filteredData = [...filteredData].sort((a, b) => {
+    filtered = filtered.slice().sort((a, b) => {
       let comparison = 0;
-
       if (sortBy === 'date') {
         comparison = new Date(a.date) - new Date(b.date);
       } else if (sortBy === 'userId') {
-        comparison = a.userId.localeCompare(b.userId);
+        comparison = (a.userId || '').localeCompare(b.userId || '');
       } else if (sortBy === 'avgScore') {
-        const avgA = Object.values(a.scores).reduce((sum, score) => sum + score, 0) / Object.values(a.scores).length;
-        const avgB = Object.values(b.scores).reduce((sum, score) => sum + score, 0) / Object.values(b.scores).length;
-        comparison = avgA - avgB;
+        comparison = (a.overallScore || 0) - (b.overallScore || 0);
       }
-
       return sortOrder === 'asc' ? comparison : -comparison;
     });
+
+    const formatDate = (dateStr) => {
+      if (!dateStr) return '-';
+      const d = new Date(dateStr);
+      return d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    };
+
+    const uniqueUsers = new Set(testHistory.map(t => t.userId)).size;
+    const todayCount = testHistory.filter(t => new Date(t.date) >= today).length;
 
     return (
       <div className="test-history-section">
@@ -1329,14 +1266,14 @@ function AdminDashboard({ currentUser, onLogout }) {
           <div className="history-stat-card">
             <FaHistory />
             <div>
-              <h3>{testHistory.filter(t => t.date.startsWith('2026-02-05')).length}</h3>
+              <h3>{todayCount}</h3>
               <p>Today's Tests</p>
             </div>
           </div>
           <div className="history-stat-card">
             <FaChartBar />
             <div>
-              <h3>{new Set(testHistory.map(t => t.userId)).size}</h3>
+              <h3>{uniqueUsers}</h3>
               <p>Unique Users</p>
             </div>
           </div>
@@ -1347,7 +1284,7 @@ function AdminDashboard({ currentUser, onLogout }) {
           <div className="control-group">
             <label>Sort By:</label>
             <select value={sortBy} onChange={(e) => setSortBy(e.target.value)} className="history-select">
-              <option value="date">Date & Time</option>
+              <option value="date">Date &amp; Time</option>
               <option value="userId">User ID</option>
               <option value="avgScore">Average Score</option>
             </select>
@@ -1372,72 +1309,86 @@ function AdminDashboard({ currentUser, onLogout }) {
             <label>Filter by Status:</label>
             <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)} className="history-select">
               <option value="all">All Statuses</option>
-              <option value="low">Low</option>
-              <option value="mild">Mild</option>
-              <option value="moderate">Moderate</option>
-              <option value="high">High</option>
+              {categories.map(cat => (
+                <option key={cat._id || cat.label} value={cat.label.toLowerCase()}>
+                  {cat.label}
+                </option>
+              ))}
             </select>
           </div>
         </div>
 
         <div className="test-history-table-container">
-          <table className="test-history-table">
-            <thead>
-              <tr>
-                <th>Date & Time</th>
-                <th>User ID</th>
-                <th>Domains Tested</th>
-                <th>Scores</th>
-                <th>Overall Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredData.length === 0 ? (
+          {historyLoading ? (
+            <p style={{ textAlign: 'center', padding: '2rem', color: '#666' }}>Loading test history...</p>
+          ) : (
+            <table className="test-history-table">
+              <thead>
                 <tr>
-                  <td colSpan="5" className="no-data">No test submissions match the selected filters</td>
+                  <th>Date &amp; Time</th>
+                  <th>User</th>
+                  <th>Domains Tested</th>
+                  <th>Domain Scores</th>
+                  <th>Overall Status</th>
                 </tr>
-              ) : (
-                filteredData.map((test) => {
-                  const scoreEntries = Object.entries(test.scores);
-                  const avgPercentage = scoreEntries.reduce((sum, [domain, score]) => sum + score, 0) / scoreEntries.length;
-                  const level = getScoreLevel(avgPercentage);
+              </thead>
+              <tbody>
+                {filtered.length === 0 ? (
+                  <tr>
+                    <td colSpan="5" className="no-data">No test submissions match the selected filters</td>
+                  </tr>
+                ) : (
+                  filtered.map((test) => {
+                    const scoreEntries = Object.entries(test.scores || {});
+                    const riskLevel = test.riskLevel || 'Unknown';
+                    const riskColor = categories.length > 0
+                      ? (() => {
+                        const colors = ['#48bb78', '#f6ad55', '#ed8936', '#FF8F8F'];
+                        const idx = categories.findIndex(c => c.label && riskLevel && c.label.toLowerCase() === riskLevel.toLowerCase());
+                        return colors[idx] !== undefined ? colors[idx] : '#aaa';
+                      })()
+                      : '#aaa';
 
-                  return (
-                    <tr key={test.id}>
-                      <td className="date-cell">{test.date}</td>
-                      <td className="user-cell">{test.userId}</td>
-                      <td className="domains-cell">
-                        <div className="domain-tags">
-                          {test.domains.map((domain, idx) => (
-                            <span key={idx} className="domain-tag">{domain}</span>
-                          ))}
-                        </div>
-                      </td>
-                      <td className="scores-cell">
-                        <div className="score-details">
-                          {scoreEntries.map(([domain, score]) => (
-                            <div key={domain} className="score-chip">
-                              <span className="score-domain">{domain}:</span>
-                              <span className="score-value">{score}%</span>
-                            </div>
-                          ))}
-                        </div>
-                      </td>
-                      <td className="status-cell">
-                        <span
-                          className="status-badge"
-                          style={{ backgroundColor: level.color, color: 'white' }}
-                        >
-                          {level.label}
-                        </span>
-                        <span className="avg-score">{avgPercentage.toFixed(1)}%</span>
-                      </td>
-                    </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
+                    return (
+                      <tr key={test.id}>
+                        <td className="date-cell">{formatDate(test.date)}</td>
+                        <td className="user-cell">
+                          <span style={{ fontWeight: 600 }}>{test.userId}</span>
+                          {test.isAnonymous && <span style={{ fontSize: '0.7rem', color: '#888', display: 'block' }}>Anonymous</span>}
+                        </td>
+                        <td className="domains-cell">
+                          <div className="domain-tags">
+                            {test.domains.map((domain, idx) => (
+                              <span key={idx} className="domain-tag">{domain}</span>
+                            ))}
+                          </div>
+                        </td>
+                        <td className="scores-cell">
+                          <div className="score-details">
+                            {scoreEntries.map(([domain, score]) => (
+                              <div key={domain} className="score-chip">
+                                <span className="score-domain">{domain}:</span>
+                                <span className="score-value">{score}%</span>
+                              </div>
+                            ))}
+                          </div>
+                        </td>
+                        <td className="status-cell">
+                          <span
+                            className="status-badge"
+                            style={{ backgroundColor: riskColor, color: 'white' }}
+                          >
+                            {riskLevel}
+                          </span>
+                          <span className="avg-score">{test.overallScore}%</span>
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          )}
         </div>
       </div>
     );
@@ -1459,7 +1410,6 @@ function AdminDashboard({ currentUser, onLogout }) {
       />
 
       <div className={`admin-sidebar ${isMobileMenuOpen ? 'mobile-open' : ''}`}>
-
         <div className="admin-brand">
           <h2>MindCare Admin</h2>
         </div>

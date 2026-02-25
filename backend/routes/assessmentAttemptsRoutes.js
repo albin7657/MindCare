@@ -8,6 +8,8 @@ import { protect } from "../middleware/authMiddleware.js";
 import Domain from "../models/Domain.js";
 import Question from "../models/Question.js";
 import Score from "../models/Score.js";
+import Category from "../models/Category.js";
+import { getCategoryForScore } from "../models/utils/calculateScore.js";
 
 const router = express.Router();
 
@@ -35,21 +37,33 @@ router.post("/", async (req, res) => {
     }
 
     let studentId;
+    let studentDisplayName;
     if (user && user._id) {
+      // Logged-in user
       studentId = user._id;
-    } else {
-      const anon = await User.findOne({ email: "guest@mindcare.com" });
-      studentId = anon ? anon._id : null;
-      if (!studentId) {
-        const guest = new User({
-          name: "Guest",
-          email: "guest@mindcare.com",
-          password: "guestpassword",
-          role: "student"
-        });
-        await guest.save();
-        studentId = guest._id;
+      // Fetch their name to use in admin dashboard
+      const loggedInUser = await User.findById(user._id);
+      studentDisplayName = loggedInUser?.name || user.name || user.email || 'Unknown';
+      // Ensure display_name is persisted
+      if (loggedInUser && !loggedInUser.display_name) {
+        loggedInUser.display_name = studentDisplayName;
+        await loggedInUser.save();
       }
+    } else {
+      // Anonymous user - create unique User_XXXX identity per submission
+      const randomId = Math.floor(1000 + Math.random() * 9000);
+      const anonDisplayName = `User_${randomId}`;
+      const anonEmail = `anon_${Date.now()}_${randomId}@mindcare.com`;
+      const anonUser = new User({
+        name: anonDisplayName,
+        display_name: anonDisplayName,
+        email: anonEmail,
+        password: `anon_${Date.now()}`,
+        role: 'student'
+      });
+      await anonUser.save();
+      studentId = anonUser._id;
+      studentDisplayName = anonDisplayName;
     }
 
     // Flatten answers from screens
@@ -115,21 +129,7 @@ router.post("/", async (req, res) => {
     const maximum_total_score = domain_scores.reduce((sum, d) => sum + d.max_score, 0);
     const overall_normalized_score = maximum_total_score > 0 ? (total_score / maximum_total_score) * 100 : 0;
 
-    let risk_level = "Low Risk";
-    if (overall_normalized_score >= 70) risk_level = "High Risk";
-    else if (overall_normalized_score >= 40) risk_level = "Medium Risk";
-
-    const recommendations = [];
-    domain_scores.forEach(ds => {
-      if (ds.normalized_score >= 70) {
-        recommendations.push({
-          test_name: ds.domain_name,
-          reason: `We've noticed a high risk in your ${ds.domain_name} score (${ds.normalized_score.toFixed(1)}%). We recommend a specialized ${ds.domain_name} test.`
-        });
-      }
-    });
-
-    // Save AssessmentAttempt
+    // Determine finalTypeId early
     let finalTypeId = assessment_type_id;
     if (!finalTypeId) {
       const generalType = await AssessmentType.findOne({ name: /General/i });
@@ -145,10 +145,37 @@ router.post("/", async (req, res) => {
       throw new Error('Could not determine assessment type ID');
     }
 
+    const attemptCategory = await getCategoryForScore(finalTypeId, overall_normalized_score);
+
+    let risk_level = attemptCategory ? attemptCategory.label : "Unknown Risk";
+
+    // Fallback recommendation if category has one
+    const recommendations = [];
+    if (attemptCategory && attemptCategory.recommendation_text) {
+      recommendations.push({
+        test_name: "Overall Well-being",
+        reason: attemptCategory.recommendation_text
+      });
+    }
+
+    const highCategory = await Category.findOne({ assessment_type_id: finalTypeId, label: /High/i });
+    const highRiskThreshold = highCategory ? highCategory.min_score : 75;
+
+    domain_scores.forEach(ds => {
+      if (ds.normalized_score >= highRiskThreshold) {
+        recommendations.push({
+          test_name: ds.domain_name,
+          reason: `We've noticed a high risk in your ${ds.domain_name} score (${ds.normalized_score.toFixed(1)}%). We recommend a specialized ${ds.domain_name} test.`
+        });
+      }
+    });
+
+    // Save AssessmentAttempt
     const attempt = new AssessmentAttempt({
       student_id: studentId,
       assessment_type_id: finalTypeId,
       total_score: total_score,
+      category_id: attemptCategory ? attemptCategory._id : undefined,
       createdAt: new Date()
     });
     await attempt.save();

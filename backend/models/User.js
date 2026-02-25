@@ -3,6 +3,7 @@ import bcrypt from "bcryptjs";
 
 const UserSchema = new mongoose.Schema({
     name: { type: String, required: true },
+    display_name: { type: String }, // Used in admin dashboard (e.g. "John" or "User_1234")
     email: { type: String, unique: true, required: true },
     password: { type: String, required: true },
     role: { type: String, enum: ["student", "admin"], default: "student" },

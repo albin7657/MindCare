@@ -151,7 +151,7 @@ function Home({ onStartTest, onNavigate }) {
               </div>
               <div className="step-a-body">
                 <h3 className="step-title">Get Your Risk Score</h3>
-                <p className="step-text">Receive categorised results — Low, Mild, Moderate, or High — across all assessed domains.</p>
+                <p className="step-text">Receive categorised results — Low, Medium, or High — across all assessed domains.</p>
               </div>
             </motion.div>
 
@@ -227,7 +227,7 @@ function Home({ onStartTest, onNavigate }) {
             <div className="article-content">
               <h3>Understanding Stress</h3>
               <p>
-                Learn how to identify stress triggers and discover effective coping strategies 
+                Learn how to identify stress triggers and discover effective coping strategies
                 to manage daily pressures and maintain balance in your life.
               </p>
               <button className="btn-read-more">Read More →</button>
@@ -248,7 +248,7 @@ function Home({ onStartTest, onNavigate }) {
             <div className="article-content">
               <h3>The Science of Sleep</h3>
               <p>
-                Discover the crucial connection between quality sleep and emotional wellbeing, 
+                Discover the crucial connection between quality sleep and emotional wellbeing,
                 and learn why rest is fundamental to your mental health.
               </p>
               <button className="btn-read-more">Read More →</button>
@@ -269,7 +269,7 @@ function Home({ onStartTest, onNavigate }) {
             <div className="article-content">
               <h3>Breaking the Stigma</h3>
               <p>
-                Join the conversation about mental health. Learn how open dialogue can help 
+                Join the conversation about mental health. Learn how open dialogue can help
                 break down barriers and create supportive communities.
               </p>
               <button className="btn-read-more">Read More →</button>

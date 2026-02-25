@@ -158,10 +158,9 @@ const seed = async () => {
 
         console.log("Creating Categories...");
         await Category.create([
-            { assessment_type_id: general._id, min_score: 0, max_score: 24.99, label: "Low", recommendation_text: "You are doing well. Maintain your healthy habits!" },
-            { assessment_type_id: general._id, min_score: 25, max_score: 49.99, label: "Mild", recommendation_text: "You are experiencing some stress. Consider mindfulness exercises." },
-            { assessment_type_id: general._id, min_score: 50, max_score: 74.99, label: "Moderate", recommendation_text: "Your well-being is impacted. Speaking with a counselor might help." },
-            { assessment_type_id: general._id, min_score: 75, max_score: 100, label: "High", recommendation_text: "You are in a high-risk zone. Please seek professional help immediately." }
+            { assessment_type_id: general._id, min_score: 0, max_score: 39, label: "Low Risk", recommendation_text: "You are doing well. Maintain your healthy habits!" },
+            { assessment_type_id: general._id, min_score: 40, max_score: 69, label: "Medium Risk", recommendation_text: "Your well-being is impacted. Speaking with a counselor might help." },
+            { assessment_type_id: general._id, min_score: 70, max_score: 100, label: "High Risk", recommendation_text: "You are in a high-risk zone. Please seek professional help immediately." }
         ]);
 
         console.log("Seed Complete!");
