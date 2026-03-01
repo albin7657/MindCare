@@ -1,8 +1,22 @@
 import { FaExclamationTriangle } from 'react-icons/fa';
+import { calculateScores } from '../utils/assessment';
 import './Results.css';
 
-function Results({ results, onRetake, onHome }) {
-  if (!results) return null;
+function Results({ results, onRetake, onHome, onDashboard }) {
+  if (!results) {
+    return (
+      <div className="results-container">
+        <div className="results-header card">
+          <h1 className="results-title">No Results Available</h1>
+          <p className="results-subtitle">Take an assessment first to view your insights.</p>
+          <div className="results-actions">
+            <button className="btn btn-primary" onClick={onRetake}>Start Assessment</button>
+            <button className="btn btn-secondary" onClick={onHome}>Back to Home</button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const {
     total_score,
@@ -90,6 +104,11 @@ function Results({ results, onRetake, onHome }) {
         </div>
 
         <div className="results-actions">
+          {onDashboard && (
+            <button className="btn btn-secondary" onClick={onDashboard}>
+              View My Dashboard
+            </button>
+          )}
           <button className="btn btn-secondary" onClick={onRetake}>
             Retake Assessment
           </button>

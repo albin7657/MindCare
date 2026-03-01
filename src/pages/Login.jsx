@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
+import { authenticateUser, registerUser } from '../utils/userData';
 import './Login.css';
 
 const fadeInUp = {
@@ -9,6 +10,7 @@ const fadeInUp = {
 
 function Login({ onNavigate, onAuth }) {
   const [isSignUp, setIsSignUp] = useState(false);
+  const [feedback, setFeedback] = useState({ type: '', message: '' });
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -20,6 +22,7 @@ function Login({ onNavigate, onAuth }) {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
+    setFeedback({ type: '', message: '' });
     setFormData(prev => ({
       ...prev,
       [name]: value
@@ -165,13 +168,13 @@ function Login({ onNavigate, onAuth }) {
           </AnimatePresence>
 
           <motion.div className="form-group" variants={fadeInUp} transition={{ duration: 0.4, ease: 'easeOut' }}>
-            <label htmlFor="email">Email Address</label>
+            <label htmlFor="email">Email or Username</label>
             <input
-              type="email"
+              type="text"
               id="email"
               name="email"
               className="form-input"
-              placeholder="Enter your email"
+              placeholder="Enter your email or username"
               value={formData.email}
               onChange={handleInputChange}
               required
@@ -241,7 +244,10 @@ function Login({ onNavigate, onAuth }) {
             <button
               type="button"
               className="link-button"
-              onClick={() => setIsSignUp(!isSignUp)}
+              onClick={() => {
+                setIsSignUp(!isSignUp);
+                setFeedback({ type: '', message: '' });
+              }}
             >
               {isSignUp ? 'Sign In' : 'Sign Up'}
             </button>
