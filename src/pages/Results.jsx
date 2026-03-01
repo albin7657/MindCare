@@ -19,15 +19,16 @@ function Results({ results, onRetake, onHome, onDashboard }) {
   }
 
   const {
-    total_score,
-    maximum_total_score,
-    overall_normalized_score,
-    risk_level,
-    domain_scores,
-    recommendations
+    total_score = 0,
+    maximum_total_score = 0,
+    overall_normalized_score = 0,
+    risk_level = 'Unknown',
+    domain_scores = [],
+    recommendations = []
   } = results;
 
   const getRiskColor = (level) => {
+    if (!level) return '#999999';
     if (level.includes('Low')) return '#4CAF50';
     if (level.includes('Medium')) return '#FFC107';
     return '#F44336';

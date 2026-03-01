@@ -11,7 +11,8 @@ function Navbar({ currentPage, setCurrentPage, isUserAuthenticated, onUserLogout
     { id: 'home', label: 'Home' },
     { id: 'test-selection', label: 'Tests' },
     { id: 'about', label: 'About' },
-    { id: 'contact', label: 'Contact' }
+    { id: 'contact', label: 'Contact' },
+    { id: 'login', label: 'Login' }
   ];
 
   const userNavItems = [

@@ -30,7 +30,7 @@ function AdminDashboard({ currentUser, onLogout }) {
   const [sortBy, setSortBy] = useState('date'); // 'date', 'userId', 'avgScore'
   const [sortOrder, setSortOrder] = useState('desc'); // 'asc', 'desc'
   const [filterDomain, setFilterDomain] = useState('all');
-  const [filterStatus, setFilterStatus] = useState('all'); // 'all', 'low', 'mild', 'moderate', 'high'
+  const [filterStatus, setFilterStatus] = useState('all'); 
 
   // Alert management
   const [alert, setAlert] = useState(null);

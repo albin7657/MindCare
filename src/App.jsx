@@ -11,7 +11,7 @@ import Login from './pages/Login';
 import AdminLogin from './pages/AdminLogin';
 import AdminDashboard from './pages/AdminDashboard';
 import UserDashboard from './pages/UserDashboard';
-import UserDashboard from './pages/UserDashboard';
+
 import { buildAssessmentEntry } from './utils/assessment';
 import {
   addUserHistoryEntry,
@@ -33,18 +33,25 @@ function App() {
   // when redirected to login for a specialized test, remember where to go after auth
   const [pendingPage, setPendingPage] = useState(null);
 
-  const saveAttemptToServer = async (results) => {
+  const saveAttemptToServer = async (answers) => {
     try {
       const res = await fetch('http://localhost:5000/api/assessment-attempts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ user: currentUser, answers: results })
+        // Pass authenticatedUser if logged in; backend handles null/anonymous users
+        body: JSON.stringify({ user: authenticatedUser || null, answers })
       });
+
+      if (!res.ok) {
+        console.error('Server save failed:', res.status);
+        return null; // triggers client-side fallback
+      }
+
       const data = await res.json();
       return data;
     } catch (err) {
       console.error('Error saving attempt:', err);
-      return { success: false };
+      return null; // triggers client-side fallback
     }
   };
 
@@ -73,11 +80,44 @@ function App() {
     setCurrentPage('home');
   };
 
-  const handleAssessmentComplete = (results) => {
-    setQuizResults(results);
+  const handleAssessmentComplete = async (answers) => {
+    // Always try to save to server and use its computed results
+    const serverResponse = await saveAttemptToServer(answers);
+
+    let processedResults;
+    if (serverResponse?.results) {
+      // Server returned fully computed results (domain_scores, risk_level, etc.)
+      processedResults = serverResponse.results;
+    } else {
+      // Fallback: compute client-side for anonymous / offline users
+      const { calculateScores: calcScores } = await import('./utils/assessment');
+      const domainScoresRaw = calcScores(answers);
+      const domainScoresArr = Object.entries(domainScoresRaw).map(([key, val]) => ({
+        domain_id: key,
+        domain_name: key.charAt(0).toUpperCase() + key.slice(1),
+        score: val.score,
+        max_score: val.max,
+        normalized_score: val.percentage
+      }));
+      const total_score = domainScoresArr.reduce((s, d) => s + d.score, 0);
+      const maximum_total_score = domainScoresArr.reduce((s, d) => s + d.max_score, 0);
+      const overall_normalized_score = maximum_total_score > 0
+        ? (total_score / maximum_total_score) * 100
+        : 0;
+      processedResults = {
+        total_score,
+        maximum_total_score,
+        overall_normalized_score,
+        risk_level: overall_normalized_score < 40 ? 'Low Risk' : overall_normalized_score < 70 ? 'Medium Risk' : 'High Risk',
+        domain_scores: domainScoresArr,
+        recommendations: []
+      };
+    }
+
+    setQuizResults(processedResults);
 
     if (authenticatedUser?.id) {
-      const entry = buildAssessmentEntry(results);
+      const entry = buildAssessmentEntry(answers);
       const updatedHistory = addUserHistoryEntry(authenticatedUser.id, entry);
       setUserHistory(updatedHistory);
     }
