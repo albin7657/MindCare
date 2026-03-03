@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { authenticateUser, registerUser } from '../utils/userData';
+// authentication now happens against the backend API; local helpers removed
 import './Login.css';
 
 const fadeInUp = {

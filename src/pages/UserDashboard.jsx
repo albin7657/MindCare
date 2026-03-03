@@ -39,7 +39,7 @@ const buildTrendPath = (history) => {
     .join(' ');
 };
 
-function UserDashboard({ user, history, onStartCombinedTest, onStartSpecificTest, onOpenTests, view = 'overview' }) {
+function UserDashboard({ user, history, domainInfo = {}, onStartCombinedTest, onStartSpecificTest, onOpenTests, view = 'overview' }) {
   const totalTests = history.length;
   const avgWellbeing = totalTests
     ? Number((history.reduce((sum, item) => sum + item.wellbeing, 0) / totalTests).toFixed(1))
@@ -54,15 +54,19 @@ function UserDashboard({ user, history, onStartCombinedTest, onStartSpecificTest
     <section className="dashboard-panel card">
       <h2>Recommended Next Tests</h2>
       <div className="recommendation-grid">
-        {recommendations.map((domainId) => (
-          <div key={domainId} className="recommendation-card">
-            <h3>{formatDomainName(domainId)}</h3>
-            <p>{recommendationDescriptions[domainId]}</p>
-            <button className="btn btn-secondary" onClick={() => onStartSpecificTest(domainId)}>
-              Start {formatDomainName(domainId)} Test
-            </button>
-          </div>
-        ))}
+        {recommendations.map((domainId) => {
+          const desc = domainInfo[domainId]?.description || recommendationDescriptions[domainId];
+          const displayName = domainInfo[domainId]?.domain_name || formatDomainName(domainId);
+          return (
+            <div key={domainId} className="recommendation-card">
+              <h3>{displayName}</h3>
+              <p>{desc}</p>
+              <button className="btn btn-secondary" onClick={() => onStartSpecificTest(domainId)}>
+                Start {displayName} Test
+              </button>
+            </div>
+          );
+        })}
       </div>
     </section>
   );
@@ -82,11 +86,14 @@ function UserDashboard({ user, history, onStartCombinedTest, onStartSpecificTest
                 <div className="history-progress-fill" style={{ width: `${entry.wellbeing}%` }} />
               </div>
               <div className="history-tags">
-                {Object.entries(entry.domainScores || {}).map(([domainId, domainData]) => (
-                  <span key={`${entry.id}-${domainId}`} className="history-tag">
-                    {formatDomainName(domainId)}: {domainData.level.label}
-                  </span>
-                ))}
+                {Object.entries(entry.domainScores || {}).map(([domainId, domainData]) => {
+                  const displayName = domainInfo[domainId]?.domain_name || formatDomainName(domainId);
+                  return (
+                    <span key={`${entry.id}-${domainId}`} className="history-tag">
+                      {displayName}: {domainData.level.label}
+                    </span>
+                  );
+                })}
               </div>
             </article>
           ))}
@@ -167,6 +174,9 @@ function UserDashboard({ user, history, onStartCombinedTest, onStartSpecificTest
             Welcome back, {user?.name || 'friend'}. Track your progress, revisit your past tests,
             and take your next best assessment step.
           </p>
+          {user?.email && (
+            <p className="user-detail">Signed in as <strong>{user.email}</strong></p>
+          )}
         </div>
         <button className="btn btn-primary" onClick={onStartCombinedTest}>
           Take Full Assessment

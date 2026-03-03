@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Navbar from './components/Navbar';
 import Home from './pages/Home';
 import Home2 from './pages/Home2';
@@ -15,10 +15,10 @@ import UserDashboard from './pages/UserDashboard';
 import { buildAssessmentEntry } from './utils/assessment';
 import {
   addUserHistoryEntry,
-  clearCurrentUser,
+  clearCurrentUser as clearStoredUser,
   getCurrentUser,
   getUserHistory,
-  setCurrentUser
+  setCurrentUser as storeCurrentUser
 } from './utils/userData';
 import './App.css';
 
@@ -29,16 +29,53 @@ function App() {
   const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
   const [authenticatedUser, setAuthenticatedUser] = useState(initialUser);
-  const [userHistory, setUserHistory] = useState(() => initialUser?.id ? getUserHistory(initialUser.id) : []);
+  // history will come from server when user has a token, otherwise fallback to localStorage
+  const [userHistory, setUserHistory] = useState(() => {
+    return initialUser?.id ? getUserHistory(initialUser.id) : [];
+  });
   // when redirected to login for a specialized test, remember where to go after auth
   const [pendingPage, setPendingPage] = useState(null);
+  const [domainInfo, setDomainInfo] = useState({});
+
+  // load domain metadata (names/descriptions) from API once
+  useEffect(() => {
+    const loadDomains = async () => {
+      try {
+        const res = await fetch('http://localhost:5000/api/domains');
+        if (res.ok) {
+          const data = await res.json();
+          const map = {};
+          data.forEach(d => {
+            const key = d.domain_name.trim().toLowerCase().replace(/\s+/g, '_');
+            map[key] = d;
+          });
+          setDomainInfo(map);
+        }
+      } catch (err) {
+        console.error('Error loading domains', err);
+      }
+    };
+    loadDomains();
+  }, []);
+
+  // if there's a logged-in user with a JWT persisted from previous session, pull history on mount
+  useEffect(() => {
+    if (initialUser?.token) {
+      fetchHistoryFromServer(initialUser.token);
+    }
+  }, []);
 
   const saveAttemptToServer = async (answers) => {
     try {
+      const headers = { 'Content-Type': 'application/json' };
+      if (authenticatedUser?.token) {
+        headers.Authorization = `Bearer ${authenticatedUser.token}`;
+      }
+
       const res = await fetch('http://localhost:5000/api/assessment-attempts', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        // Pass authenticatedUser if logged in; backend handles null/anonymous users
+        headers,
+        // pass answers; server will derive user from token if available or body
         body: JSON.stringify({ user: authenticatedUser || null, answers })
       });
 
@@ -55,11 +92,36 @@ function App() {
     }
   };
 
+  // helper to load history from backend (requires valid JWT token)
+  const fetchHistoryFromServer = async (token) => {
+    try {
+      const resp = await fetch('http://localhost:5000/api/assessment-attempts/history', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (resp.ok) {
+        const data = await resp.json();
+        setUserHistory(data || []);
+      } else {
+        console.warn('Failed to fetch history', resp.status);
+      }
+    } catch (err) {
+      console.error('Error fetching user history', err);
+    }
+  };
+
   // central auth handler which also consumes pendingPage
-  const handleAuth = (user) => {
+  const handleAuth = async (user) => {
     setCurrentUser(user);
     setAuthenticatedUser(user);
-    setUserHistory(getUserHistory(user.id));
+    // persist session so that reloads keep the token/data
+    storeCurrentUser(user);
+
+    if (user?.token) {
+      await fetchHistoryFromServer(user.token);
+    } else if (user?.id) {
+      setUserHistory(getUserHistory(user.id));
+    }
+
     if (user.role === 'admin') {
       setIsAdminAuthenticated(true);
       // admin always goes to dashboard regardless of pending
@@ -73,7 +135,7 @@ function App() {
   };
 
   const handleUserLogout = () => {
-    clearCurrentUser();
+    clearStoredUser();
     setCurrentUser(null);
     setAuthenticatedUser(null);
     setUserHistory([]);
@@ -116,7 +178,10 @@ function App() {
 
     setQuizResults(processedResults);
 
-    if (authenticatedUser?.id) {
+    if (authenticatedUser?.token) {
+      // refresh server-side history so dashboard shows the new record
+      await fetchHistoryFromServer(authenticatedUser.token);
+    } else if (authenticatedUser?.id) {
       const entry = buildAssessmentEntry(answers);
       const updatedHistory = addUserHistoryEntry(authenticatedUser.id, entry);
       setUserHistory(updatedHistory);
@@ -164,6 +229,7 @@ function App() {
           <UserDashboard
             user={authenticatedUser}
             history={userHistory}
+            domainInfo={domainInfo}
             view="overview"
             onOpenTests={() => setCurrentPage('test-selection')}
             onStartCombinedTest={() => setCurrentPage('questionnaire')}
@@ -181,6 +247,7 @@ function App() {
           <UserDashboard
             user={authenticatedUser}
             history={userHistory}
+            domainInfo={domainInfo}
             view={currentPage === 'user-analytics' ? 'analytics' : currentPage === 'user-history' ? 'history' : 'recommendations'}
             onOpenTests={() => setCurrentPage('test-selection')}
             onStartCombinedTest={() => setCurrentPage('questionnaire')}

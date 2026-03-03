@@ -25,6 +25,12 @@
   max-width: 720px;
 }
 
+.user-detail {
+  color: var(--text-secondary);
+  font-size: 14px;
+  margin-top: 4px;
+}
+
 .user-stats-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));

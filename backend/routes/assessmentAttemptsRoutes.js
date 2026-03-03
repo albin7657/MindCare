@@ -13,16 +13,65 @@ import { getCategoryForScore } from "../models/utils/calculateScore.js";
 
 const router = express.Router();
 
-// @desc    Get student's assessment history
+// @desc    Get student's assessment history (includes score details)
 router.get("/history", protect, async (req, res) => {
   try {
-    const history = await AssessmentAttempt.find({ student_id: req.user._id })
-      .populate("assessment_type_id")
-      .populate("category_id")
-      .sort({ createdAt: -1 });
+    // grab attempts, then join with Score docs to shape them as front-end expects
+    const attempts = await AssessmentAttempt.find({ student_id: req.user._id })
+      .sort({ createdAt: -1 })
+      .lean();
 
-    res.json(history);
+    // early exit when there are no attempts
+    if (!attempts.length) {
+      return res.json([]);
+    }
+
+    // fetch corresponding scores
+    const attemptIds = attempts.map(a => a._id);
+    const scoreDocs = await Score.find({ attempt_id: { $in: attemptIds } }).lean();
+    const scoreMap = {};
+    scoreDocs.forEach(s => {
+      scoreMap[s.attempt_id.toString()] = s;
+    });
+
+    // helper for computing level (duplicate from front-end assessment util)
+    const computeLevel = (percentage) => {
+      if (percentage < 25) return { label: 'Low', color: '#4CAF50' };
+      if (percentage < 50) return { label: 'Mild', color: '#FFC107' };
+      if (percentage < 75) return { label: 'Moderate', color: '#FF9800' };
+      return { label: 'High', color: '#F44336' };
+    };
+
+    const formatted = attempts.map(a => {
+      const s = scoreMap[a._id.toString()];
+      let domainScores = {};
+      let wellbeing = null;
+      if (s) {
+        s.domain_scores.forEach(ds => {
+          // try to normalize the domain name into a lowercase slug; fall back to id string
+          const rawName = ds.domain_name || '';
+          const slug = rawName.trim().toLowerCase().replace(/\s+/g, '_');
+          const key = slug || (ds.domain_id ? ds.domain_id.toString() : '');
+          domainScores[key] = {
+            score: ds.score,
+            max: ds.max_score,
+            percentage: ds.normalized_score,
+            level: computeLevel(ds.normalized_score)
+          };
+        });
+        wellbeing = 100 - (s.overall_normalized_score || 0);
+      }
+      return {
+        id: a._id,
+        createdAt: a.createdAt,
+        wellbeing,
+        domainScores
+      };
+    });
+
+    res.json(formatted);
   } catch (err) {
+    console.error('History fetch error', err);
     res.status(500).json({ message: "Error fetching history" });
   }
 });
@@ -38,13 +87,20 @@ router.post("/", async (req, res) => {
 
     let studentId;
     let studentDisplayName;
-    if (user && user._id) {
-      // Logged-in user
+    // prefer token-based identity if protected middleware attached user
+    if (req.user && req.user._id) {
+      studentId = req.user._id;
+      studentDisplayName = req.user.name || req.user.email || 'Unknown';
+      // make sure display_name persists in DB
+      if (req.user && !req.user.display_name) {
+        req.user.display_name = studentDisplayName;
+        await req.user.save();
+      }
+    } else if (user && user._id) {
+      // Logged-in user provided in body (older clients)
       studentId = user._id;
-      // Fetch their name to use in admin dashboard
       const loggedInUser = await User.findById(user._id);
       studentDisplayName = loggedInUser?.name || user.name || user.email || 'Unknown';
-      // Ensure display_name is persisted
       if (loggedInUser && !loggedInUser.display_name) {
         loggedInUser.display_name = studentDisplayName;
         await loggedInUser.save();
