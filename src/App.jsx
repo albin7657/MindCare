@@ -11,6 +11,11 @@ import Login from './pages/Login';
 import AdminLogin from './pages/AdminLogin';
 import AdminDashboard from './pages/AdminDashboard';
 import UserDashboard from './pages/UserDashboard';
+import StressTest from './pages/StressTest';
+import AnxietyTest from './pages/AnxietyTest';
+import DepressionTest from './pages/DepressionTest';
+import BurnoutTest from './pages/BurnoutTest';
+import SleepTest from './pages/SleepTest';
 
 import { buildAssessmentEntry } from './utils/assessment';
 import {
@@ -203,17 +208,40 @@ function App() {
       case 'tests':
         return <TestSelection onStartCombinedTest={() => setCurrentPage('questionnaire')} onStartSpecificTest={(testId) => setCurrentPage(`test-${testId}`)} />;
       case 'test-stress':
-      case 'test-anxiety':
-      case 'test-depression':
-      case 'test-burnout':
-      case 'test-sleep':
-        // make sure user is signed in before showing specialized test
         if (!currentUser && !authenticatedUser) {
           setPendingPage(currentPage);
           setCurrentPage('login');
-          return null; // will re-render as login
+          return null;
         }
-        return <Questionnaire onComplete={handleAssessmentComplete} onBack={() => setCurrentPage('test-selection')} />;
+        return <StressTest onComplete={handleAssessmentComplete} onBack={() => setCurrentPage('test-selection')} />;
+      case 'test-anxiety':
+        if (!currentUser && !authenticatedUser) {
+          setPendingPage(currentPage);
+          setCurrentPage('login');
+          return null;
+        }
+        return <AnxietyTest onComplete={handleAssessmentComplete} onBack={() => setCurrentPage('test-selection')} />;
+      case 'test-depression':
+        if (!currentUser && !authenticatedUser) {
+          setPendingPage(currentPage);
+          setCurrentPage('login');
+          return null;
+        }
+        return <DepressionTest onComplete={handleAssessmentComplete} onBack={() => setCurrentPage('test-selection')} />;
+      case 'test-burnout':
+        if (!currentUser && !authenticatedUser) {
+          setPendingPage(currentPage);
+          setCurrentPage('login');
+          return null;
+        }
+        return <BurnoutTest onComplete={handleAssessmentComplete} onBack={() => setCurrentPage('test-selection')} />;
+      case 'test-sleep':
+        if (!currentUser && !authenticatedUser) {
+          setPendingPage(currentPage);
+          setCurrentPage('login');
+          return null;
+        }
+        return <SleepTest onComplete={handleAssessmentComplete} onBack={() => setCurrentPage('test-selection')} />;
       case 'about':
         return <About />;
       case 'contact':
@@ -308,7 +336,12 @@ function App() {
         currentPage !== 'about' &&
         currentPage !== 'contact' &&
         currentPage !== 'admin-login' &&
-        currentPage !== 'admin-dashboard' ? 'with-padding' : ''
+        currentPage !== 'admin-dashboard' &&
+        currentPage !== 'test-stress' &&
+        currentPage !== 'test-anxiety' &&
+        currentPage !== 'test-depression' &&
+        currentPage !== 'test-burnout' &&
+        currentPage !== 'test-sleep' ? 'with-padding' : ''
         }`}>
         {renderPage()}
       </main>
