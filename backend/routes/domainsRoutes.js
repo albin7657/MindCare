@@ -71,11 +71,20 @@ router.get("/", async (req, res) => {
 // POST create new domain
 router.post("/", protect, admin, async (req, res) => {
   try {
+    console.log('Creating domain:', req.body);
+    console.log('User from auth:', req.user);
+    
     const domain = new Domain(req.body);
     await domain.save();
+    
+    console.log('Domain created successfully:', domain);
     res.status(201).json(domain);
   } catch (err) {
-    res.status(500).json({ message: "Failed to create domain" });
+    console.error('Domain creation error:', err);
+    res.status(500).json({ 
+      message: "Failed to create domain",
+      error: err.message 
+    });
   }
 });
 

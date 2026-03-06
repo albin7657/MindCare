@@ -283,21 +283,25 @@ function AdminDashboard({ currentUser, onLogout }) {
 
   const handleEditQuestion = (domainId, index) => {
     const domain = domains.find(d => d.id === domainId);
+    const question = domain.questions[index];
     setEditingQuestion({
       domainId,
       index,
-      text: domain.questions[index].text
-      // weight is fixed, no need to store
+      text: question.text,
+      weight: question.weight || 1
     });
   };
 
   const handleSaveQuestion = () => {
     (async () => {
       if (!editingQuestion) return;
-      const { domainId, index, text } = editingQuestion;
+      const { domainId, index, text, weight } = editingQuestion;
       try {
         const domain = domains.find(d => d.id === domainId);
         const q = domain?.questions?.[index];
+        
+        console.log('Saving question:', { id: q?.id, text, weight });
+        
         if (q && q.id) {
           const res = await fetch(`http://localhost:5000/api/questions/${q.id}`, {
             method: 'PUT',
@@ -305,32 +309,54 @@ function AdminDashboard({ currentUser, onLogout }) {
               'Content-Type': 'application/json',
               'Authorization': `Bearer ${currentUser?.token}`
             },
-            body: JSON.stringify({ question_text: text })
+            body: JSON.stringify({ 
+              question_text: text,
+              weight: parseFloat(weight) || 1
+            })
           });
-          if (!res.ok) throw new Error('Failed to update question');
+          
+          if (!res.ok) {
+            const errorData = await res.json();
+            console.error('Update failed:', errorData);
+            throw new Error(errorData.message || 'Failed to update question');
+          }
+          
           const updated = await res.json();
+          console.log('Question updated:', updated);
+          
           setDomains(prev => prev.map(d => {
             if (d.id === domainId) {
               const updatedQuestions = [...d.questions];
-              updatedQuestions[index] = { ...updatedQuestions[index], id: updated._id || updated.id, text: updated.question_text || text, weight: 1 };
+              updatedQuestions[index] = { 
+                ...updatedQuestions[index], 
+                id: updated._id || updated.id, 
+                text: updated.question_text || text, 
+                weight: updated.weight || parseFloat(weight) || 1
+              };
               return { ...d, questions: updatedQuestions };
             }
             return d;
           }));
+          setAlert({ type: 'success', message: 'Question updated successfully' });
         } else {
+          // Local update only (no backend ID yet)
           setDomains(prev => prev.map(d => {
             if (d.id === domainId) {
               const updatedQuestions = [...d.questions];
-              updatedQuestions[index] = { text, weight: 1 };
+              updatedQuestions[index] = { 
+                text, 
+                weight: parseFloat(weight) || 1 
+              };
               return { ...d, questions: updatedQuestions };
             }
             return d;
           }));
+          setAlert({ type: 'success', message: 'Question updated locally' });
         }
         setEditingQuestion(null);
       } catch (err) {
         console.error('Save question error', err);
-        setAlert({ type: 'error', message: 'Failed to save question' });
+        setAlert({ type: 'error', message: 'Failed to save question: ' + err.message });
       }
     })();
   };
@@ -464,6 +490,9 @@ function AdminDashboard({ currentUser, onLogout }) {
       if (!newDomain.name.trim()) return setAlert({ type: 'error', message: 'Enter domain name' });
 
       try {
+        console.log('Creating domain with:', { domain_name: newDomain.name, color: newDomain.color });
+        console.log('Token:', currentUser?.token);
+        
         const res = await fetch('http://localhost:5000/api/domains', {
           method: 'POST',
           headers: {
@@ -475,16 +504,18 @@ function AdminDashboard({ currentUser, onLogout }) {
             color: newDomain.color
           })
         });
+        
+        const responseData = await res.json();
+        console.log('Domain creation response:', responseData);
+        
         if (!res.ok) {
-          const error = await res.json();
-          return setAlert({ type: 'error', message: error.error || 'Failed to create domain' });
+          return setAlert({ type: 'error', message: responseData.error || responseData.message || 'Failed to create domain' });
         }
-        const created = await res.json();
 
         const d = {
-          id: created._id || created.id,
-          name: created.domain_name || created.name || newDomain.name,
-          color: created.color || newDomain.color,
+          id: responseData._id || responseData.id,
+          name: responseData.domain_name || responseData.name || newDomain.name,
+          color: responseData.color || newDomain.color,
           questions: [],
           questionsByAssessment: {}
         };
@@ -494,7 +525,7 @@ function AdminDashboard({ currentUser, onLogout }) {
         setAlert({ type: 'success', message: 'Domain added successfully' });
       } catch (err) {
         console.error('Add domain error', err);
-        setAlert({ type: 'error', message: 'Failed to add domain' });
+        setAlert({ type: 'error', message: 'Failed to add domain: ' + err.message });
       }
     })();
   };

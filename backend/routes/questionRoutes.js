@@ -62,6 +62,28 @@ router.post("/", protect, admin, async (req, res) => {
   }
 });
 
+// UPDATE question (text only - options are managed separately)
+router.put("/:id", protect, admin, async (req, res) => {
+  try {
+    const { question_text, weight } = req.body;
+    
+    const question = await Question.findById(req.params.id);
+    if (!question) {
+      return res.status(404).json({ message: "Question not found" });
+    }
+
+    // Update fields
+    if (question_text !== undefined) question.question_text = question_text;
+    if (weight !== undefined) question.weight = weight;
+    
+    await question.save();
+    res.json(question);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Error updating question" });
+  }
+});
+
 // DELETE question
 router.delete("/:id", protect, admin, async (req, res) => {
   try {
