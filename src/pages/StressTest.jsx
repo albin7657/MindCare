@@ -53,7 +53,6 @@ function StressTest({ onComplete, onBack }) {
         <div className="specialized-test-page">
             {/* Header banner */}
             <div className="specialized-test-banner stress-banner">
-                <div className="specialized-test-banner-icon">🧠</div>
                 <div>
                     <h1 className="specialized-test-banner-title">Stress Assessment</h1>
                     <p className="specialized-test-banner-subtitle">

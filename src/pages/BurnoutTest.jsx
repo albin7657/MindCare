@@ -51,7 +51,6 @@ function BurnoutTest({ onComplete, onBack }) {
     return (
         <div className="specialized-test-page">
             <div className="specialized-test-banner burnout-banner">
-                <div className="specialized-test-banner-icon">🔥</div>
                 <div>
                     <h1 className="specialized-test-banner-title">Burnout Assessment</h1>
                     <p className="specialized-test-banner-subtitle">

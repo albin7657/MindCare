@@ -51,7 +51,6 @@ function AnxietyTest({ onComplete, onBack }) {
     return (
         <div className="specialized-test-page">
             <div className="specialized-test-banner anxiety-banner">
-                <div className="specialized-test-banner-icon">⚠️</div>
                 <div>
                     <h1 className="specialized-test-banner-title">Anxiety Assessment</h1>
                     <p className="specialized-test-banner-subtitle">

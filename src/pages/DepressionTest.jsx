@@ -51,7 +51,7 @@ function DepressionTest({ onComplete, onBack }) {
     return (
         <div className="specialized-test-page">
             <div className="specialized-test-banner depression-banner">
-                <div className="specialized-test-banner-icon">💔</div>
+
                 <div>
                     <h1 className="specialized-test-banner-title">Depression Assessment</h1>
                     <p className="specialized-test-banner-subtitle">

@@ -51,7 +51,6 @@ function SleepTest({ onComplete, onBack }) {
     return (
         <div className="specialized-test-page">
             <div className="specialized-test-banner sleep-banner">
-                <div className="specialized-test-banner-icon">🛏️</div>
                 <div>
                     <h1 className="specialized-test-banner-title">Sleep Quality Assessment</h1>
                     <p className="specialized-test-banner-subtitle">
