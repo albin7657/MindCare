@@ -11,7 +11,22 @@ function Screen3({ answers, optionalData, onUpdate, onOptionalUpdate, showValida
     const fetchQuestions = async () => {
       try {
         setLoading(true);
-        const response = await fetch('http://localhost:5000/api/domains/questions-by-domains/Sleep');
+
+        // filter to general assessment type for combined screens
+        let generalTypeId = null;
+        try {
+          const tRes = await fetch('http://localhost:5000/api/assessment-types');
+          if (tRes.ok) {
+            const types = await tRes.json();
+            const general = types.find(t => !t.isSpecialized) || types[0];
+            generalTypeId = general?._id;
+          }
+        } catch (e) {
+          console.warn('Could not load assessment types, continuing without filter', e);
+        }
+
+        const url = `http://localhost:5000/api/domains/questions-by-domains/Sleep${generalTypeId ? `?assessment_type_id=${generalTypeId}` : ''}`;
+        const response = await fetch(url);
         if (!response.ok) {
           throw new Error('Failed to fetch questions');
         }

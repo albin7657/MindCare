@@ -21,8 +21,13 @@ router.get("/questions-by-domains/:domainNames", async (req, res) => {
 
     const domainIds = domains.map(d => d._id);
 
-    // Find all questions in these domains
-    const questions = await Question.find({ domain_id: { $in: domainIds } });
+    // Find all questions in these domains (optionally restrict to one assessment type)
+    const { assessment_type_id } = req.query;
+    const qfilter = { domain_id: { $in: domainIds } };
+    if (assessment_type_id) {
+      qfilter.assessment_type_id = assessment_type_id;
+    }
+    const questions = await Question.find(qfilter);
 
     // Transform to include options from OptionSet
     const questionsWithOptions = await Promise.all(

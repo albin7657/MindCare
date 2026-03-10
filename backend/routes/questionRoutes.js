@@ -7,9 +7,16 @@ import { protect, admin } from "../middleware/authMiddleware.js";
 const router = express.Router();
 
 // GET questions by domain (RESTORED FRONTEND COMPATIBILITY)
+// supports optional ?assessment_type_id=<id> to narrow the results.
 router.get("/domain/:domainId", async (req, res) => {
   try {
-    const questions = await Question.find({ domain_id: req.params.domainId });
+    const { assessment_type_id } = req.query;
+    const filter = { domain_id: req.params.domainId };
+    if (assessment_type_id) {
+      filter.assessment_type_id = assessment_type_id;
+    }
+
+    const questions = await Question.find(filter);
     res.json(questions);
   } catch (err) {
     res.status(500).json({ message: "Error fetching questions" });

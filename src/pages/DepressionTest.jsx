@@ -14,7 +14,19 @@ function DepressionTest({ onComplete, onBack }) {
         const fetchQuestions = async () => {
             try {
                 setLoading(true);
-                const response = await fetch('http://localhost:5000/api/domains/questions-by-domains/Depression');
+                let specTypeId = null;
+                try {
+                    const tRes = await fetch('http://localhost:5000/api/assessment-types');
+                    if (tRes.ok) {
+                        const types = await tRes.json();
+                        const specialized = types.find(t => t.isSpecialized);
+                        specTypeId = specialized?._id;
+                    }
+                } catch (e) {
+                    console.warn('could not load assessment types', e);
+                }
+                const url = `http://localhost:5000/api/domains/questions-by-domains/Depression${specTypeId ? `?assessment_type_id=${specTypeId}` : ''}`;
+                const response = await fetch(url);
                 if (!response.ok) throw new Error('Failed to fetch questions');
                 const data = await response.json();
                 setQuestions(data);

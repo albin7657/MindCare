@@ -14,11 +14,20 @@ function AnxietyTest({ onComplete, onBack }) {
         const fetchQuestions = async () => {
             try {
                 setLoading(true);
-                const response = await fetch('http://localhost:5000/api/domains/questions-by-domains/Anxiety');
-                if (!response.ok) throw new Error('Failed to fetch questions');
-                const data = await response.json();
-                setQuestions(data);
-                setError(null);
+                    // filter for specialized assessment type
+                    let specTypeId = null;
+                    try {
+                        const tRes = await fetch('http://localhost:5000/api/assessment-types');
+                        if (tRes.ok) {
+                            const types = await tRes.json();
+                            const specialized = types.find(t => t.isSpecialized);
+                            specTypeId = specialized?._id;
+                        }
+                    } catch (e) {
+                        console.warn('could not load assessment types', e);
+                    }
+                    const url = `http://localhost:5000/api/domains/questions-by-domains/Anxiety${specTypeId ? `?assessment_type_id=${specTypeId}` : ''}`;
+                    const response = await fetch(url);
             } catch (err) {
                 console.error('Error fetching questions:', err);
                 setError('Failed to load questions. Please try again.');
