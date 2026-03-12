@@ -28,6 +28,10 @@ function AnxietyTest({ onComplete, onBack }) {
                     }
                     const url = `http://localhost:5000/api/domains/questions-by-domains/Anxiety${specTypeId ? `?assessment_type_id=${specTypeId}` : ''}`;
                     const response = await fetch(url);
+                    if (!response.ok) throw new Error('Failed to fetch questions');
+                    const data = await response.json();
+                    setQuestions(data);
+                    setError(null);
             } catch (err) {
                 console.error('Error fetching questions:', err);
                 setError('Failed to load questions. Please try again.');

@@ -204,9 +204,9 @@ router.post("/", async (req, res) => {
     const attemptCategory = await getCategoryForScore(finalTypeId, overall_normalized_score);
 
     let risk_level = attemptCategory ? attemptCategory.label : "Unknown Risk";
+    const recommendations = [];
 
     // Fallback recommendation if category has one
-    const recommendations = [];
     if (attemptCategory && attemptCategory.recommendation_text) {
       recommendations.push({
         test_name: "Overall Well-being",
