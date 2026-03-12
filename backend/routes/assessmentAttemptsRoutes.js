@@ -10,8 +10,94 @@ import Question from "../models/Question.js";
 import Score from "../models/Score.js";
 import Category from "../models/Category.js";
 import { getCategoryForScore } from "../models/utils/calculateScore.js";
+import nodemailer from "nodemailer";
 
 const router = express.Router();
+
+const isValidEmail = (value) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value || "").trim());
+
+const canSendEmail = () => {
+  return Boolean(
+    process.env.SMTP_USER &&
+    process.env.SMTP_PASS
+  );
+};
+
+const buildResultEmailHtml = ({ name, attemptedAt, results, profile }) => {
+  const domainRows = (results.domain_scores || [])
+    .map(
+      (d) =>
+        `<tr>
+          <td style="padding:8px;border:1px solid #ddd;">${d.domain_name}</td>
+          <td style="padding:8px;border:1px solid #ddd;">${(d.normalized_score || 0).toFixed(1)}%</td>
+          <td style="padding:8px;border:1px solid #ddd;">${d.score}/${d.max_score}</td>
+        </tr>`
+    )
+    .join("");
+
+  const recommendations = (results.recommendations || [])
+    .map((r) => `<li><strong>${r.test_name}:</strong> ${r.reason}</li>`)
+    .join("");
+
+  const profileRows = [
+    name ? `<li><strong>Name:</strong> ${name}</li>` : "",
+    profile?.gender ? `<li><strong>Gender:</strong> ${profile.gender}</li>` : "",
+    profile?.location ? `<li><strong>Location:</strong> ${profile.location}</li>` : ""
+  ]
+    .filter(Boolean)
+    .join("");
+
+  return `
+    <div style="font-family:Arial,sans-serif;line-height:1.5;color:#222;">
+      <h2 style="margin-bottom:8px;">Your MindCare Assessment Results</h2>
+      <p style="margin-top:0;">Hello ${name || "there"}, here is a copy of your latest assessment summary.</p>
+      <p><strong>Date:</strong> ${attemptedAt}</p>
+      <p><strong>Overall Risk:</strong> ${results.risk_level}</p>
+      <p><strong>Wellbeing:</strong> ${(100 - (results.overall_normalized_score || 0)).toFixed(1)}%</p>
+      ${profileRows ? `<h3 style="margin-top:16px;margin-bottom:8px;">Profile</h3><ul>${profileRows}</ul>` : ""}
+
+      <h3 style="margin-bottom:8px;">Domain Breakdown</h3>
+      <table style="border-collapse:collapse;width:100%;max-width:640px;">
+        <thead>
+          <tr>
+            <th style="text-align:left;padding:8px;border:1px solid #ddd;background:#f7f7f7;">Domain</th>
+            <th style="text-align:left;padding:8px;border:1px solid #ddd;background:#f7f7f7;">Score (%)</th>
+            <th style="text-align:left;padding:8px;border:1px solid #ddd;background:#f7f7f7;">Points</th>
+          </tr>
+        </thead>
+        <tbody>${domainRows}</tbody>
+      </table>
+
+      ${recommendations ? `<h3 style="margin-top:16px;margin-bottom:8px;">Recommendations</h3><ul>${recommendations}</ul>` : ""}
+      <p style="margin-top:16px;color:#555;">This email was sent because you selected "Email me a copy of my results" in MindCare.</p>
+    </div>
+  `;
+};
+
+const sendAssessmentEmail = async ({ to, name, attemptedAt, results, profile }) => {
+  const smtpHost = process.env.SMTP_HOST || "smtp.gmail.com";
+  const smtpPort = Number(process.env.SMTP_PORT || 587);
+  const smtpSecure = String(process.env.SMTP_SECURE || "false").toLowerCase() === "true";
+  const fromAddress = process.env.EMAIL_FROM || process.env.SMTP_USER;
+
+  const transporter = nodemailer.createTransport({
+    host: smtpHost,
+    port: smtpPort,
+    secure: smtpSecure,
+    auth: {
+      user: process.env.SMTP_USER,
+      pass: process.env.SMTP_PASS
+    }
+  });
+
+  await transporter.sendMail({
+    from: fromAddress,
+    to,
+    subject: "Your MindCare Assessment Results",
+    text: `Hello ${name || "there"},\n\nYour risk level is ${results.risk_level}.\nWellbeing: ${(100 - (results.overall_normalized_score || 0)).toFixed(1)}%${profile?.gender ? `\nGender: ${profile.gender}` : ""}${profile?.location ? `\nLocation: ${profile.location}` : ""}\n\nThank you for using MindCare.`,
+    html: buildResultEmailHtml({ name, attemptedAt, results, profile })
+  });
+};
 
 // @desc    Get student's assessment history (includes score details)
 router.get("/history", protect, async (req, res) => {
@@ -127,6 +213,12 @@ router.post("/", async (req, res) => {
       ...(screenAnswers.screen1 || {}),
       ...(screenAnswers.screen2 || {}),
       ...(screenAnswers.screen3 || {})
+    };
+
+    const optionalData = screenAnswers.optional || {};
+    const optionalProfile = {
+      gender: String(optionalData.gender || "").trim(),
+      location: String(optionalData.location || "").trim()
     };
 
     const questionIds = Object.keys(allAnswers);
@@ -261,17 +353,52 @@ router.post("/", async (req, res) => {
     });
     await scoreDoc.save();
 
+    const results = {
+      total_score,
+      maximum_total_score,
+      overall_normalized_score,
+      risk_level,
+      domain_scores,
+      recommendations
+    };
+
+    let emailStatus = {
+      requested: Boolean(optionalData.emailCopy),
+      sent: false,
+      reason: null
+    };
+
+    if (optionalData.emailCopy) {
+      const targetEmail = String(optionalData.email || "").trim();
+      if (!targetEmail) {
+        emailStatus.reason = "Email copy requested but no email address provided.";
+      } else if (!isValidEmail(targetEmail)) {
+        emailStatus.reason = "Invalid email address format.";
+      } else if (!canSendEmail()) {
+        emailStatus.reason = "Email service is not configured on the server. Set at least SMTP_USER and SMTP_PASS in backend/.env.";
+      } else {
+        try {
+          const attemptedAt = new Date(attempt.createdAt || Date.now()).toLocaleString();
+          await sendAssessmentEmail({
+            to: targetEmail,
+            name: studentDisplayName,
+            attemptedAt,
+            results,
+            profile: optionalProfile
+          });
+          emailStatus.sent = true;
+        } catch (emailErr) {
+          console.error("Failed to send assessment email:", emailErr.message);
+          emailStatus.reason = "Failed to send email copy.";
+        }
+      }
+    }
+
     res.json({
       success: true,
       attempt_id: attempt._id,
-      results: {
-        total_score,
-        maximum_total_score,
-        overall_normalized_score,
-        risk_level,
-        domain_scores,
-        recommendations
-      }
+      results,
+      emailStatus
     });
   } catch (err) {
     console.error('Error submitting assessment:', err.message);

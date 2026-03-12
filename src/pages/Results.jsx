@@ -1,5 +1,5 @@
+import { useEffect, useMemo, useState } from 'react';
 import { FaExclamationTriangle } from 'react-icons/fa';
-import { calculateScores } from '../utils/assessment';
 import './Results.css';
 
 function Results({ results, onRetake, onHome, onDashboard }) {
@@ -24,8 +24,39 @@ function Results({ results, onRetake, onHome, onDashboard }) {
     overall_normalized_score = 0,
     risk_level = 'Unknown',
     domain_scores = [],
-    recommendations = []
+    recommendations = [],
+    emailStatus = null
   } = results;
+
+  const emailToast = useMemo(() => {
+    if (!emailStatus?.requested) return null;
+    if (emailStatus.sent) {
+      return {
+        type: 'success',
+        message: 'Email sent successfully. A copy of your results has been delivered.'
+      };
+    }
+    return {
+      type: 'warning',
+      message: emailStatus.reason || 'Could not send email copy. Your results were still saved.'
+    };
+  }, [emailStatus]);
+
+  const [showEmailToast, setShowEmailToast] = useState(Boolean(emailToast));
+
+  useEffect(() => {
+    if (!emailToast) {
+      setShowEmailToast(false);
+      return;
+    }
+
+    setShowEmailToast(true);
+    const timer = setTimeout(() => {
+      setShowEmailToast(false);
+    }, 4000);
+
+    return () => clearTimeout(timer);
+  }, [emailToast]);
 
   const getRiskColor = (level) => {
     if (!level) return '#999999';
@@ -36,6 +67,12 @@ function Results({ results, onRetake, onHome, onDashboard }) {
 
   return (
     <div className="results-container">
+      {emailToast && showEmailToast && (
+        <aside className={`email-toast email-toast-${emailToast.type}`} role="status" aria-live="polite">
+          {emailToast.message}
+        </aside>
+      )}
+
       <div className="results-header card">
         <h1 className="results-title">Your Assessment Results</h1>
         <p className="results-subtitle">

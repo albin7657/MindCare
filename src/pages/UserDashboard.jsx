@@ -80,7 +80,7 @@ function UserDashboard({ user, history, domainInfo = {}, onStartCombinedTest, on
             <article key={entry.id} className="history-item">
               <div className="history-item-header">
                 <strong>{formatDate(entry.createdAt)}</strong>
-                <span className="history-score">Wellbeing {entry.wellbeing}%</span>
+                <span className="history-score">Wellbeing {(Number(entry.wellbeing) || 0).toFixed(1)}%</span>
               </div>
               <div className="history-progress-track">
                 <div className="history-progress-fill" style={{ width: `${entry.wellbeing}%` }} />

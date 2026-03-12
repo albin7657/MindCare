@@ -2,6 +2,33 @@
   max-width: 1000px;
   margin: 0 auto;
   padding: 20px 0;
+  position: relative;
+}
+
+.email-toast {
+  position: fixed;
+  right: 24px;
+  top: 96px;
+  z-index: 1200;
+  max-width: 360px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  border: 1px solid transparent;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.14);
+  font-weight: 600;
+  line-height: 1.45;
+}
+
+.email-toast-success {
+  background: #e9f8ef;
+  border-color: #8ad4a3;
+  color: #135e2e;
+}
+
+.email-toast-warning {
+  background: #fff7e8;
+  border-color: #f0ca7a;
+  color: #7a4e00;
 }
 
 .results-header {
@@ -121,6 +148,13 @@
 }
 
 @media (max-width: 768px) {
+  .email-toast {
+    left: 16px;
+    right: 16px;
+    top: 84px;
+    max-width: none;
+  }
+
   .results-title {
     font-size: 28px;
   }

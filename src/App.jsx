@@ -154,7 +154,10 @@ function App() {
     let processedResults;
     if (serverResponse?.results) {
       // Server returned fully computed results (domain_scores, risk_level, etc.)
-      processedResults = serverResponse.results;
+      processedResults = {
+        ...serverResponse.results,
+        emailStatus: serverResponse.emailStatus || null
+      };
     } else {
       // Fallback: compute client-side for anonymous / offline users
       const { calculateScores: calcScores } = await import('./utils/assessment');
@@ -177,7 +180,8 @@ function App() {
         overall_normalized_score,
         risk_level: overall_normalized_score < 40 ? 'Low Risk' : overall_normalized_score < 70 ? 'Medium Risk' : 'High Risk',
         domain_scores: domainScoresArr,
-        recommendations: []
+        recommendations: [],
+        emailStatus: null
       };
     }
 
