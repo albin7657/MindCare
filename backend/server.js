@@ -15,6 +15,7 @@ import questionRoutes from "./routes/questionRoutes.js";
 import optionRoutes from "./routes/optionRoutes.js"; // RESTORED
 import optionSetRoutes from "./routes/optionSetRoutes.js";
 import categoryRoutes from "./routes/categoryRoutes.js";
+import contactRoutes from "./routes/contactRoutes.js";
 
 dotenv.config();
 if (!process.env.MONGO_URI) {
@@ -52,6 +53,7 @@ app.use("/api/questions", questionRoutes);
 app.use("/api/options", optionRoutes);
 app.use("/api/option-sets", optionSetRoutes);
 app.use("/api/categories", categoryRoutes);
+app.use("/api/contact", contactRoutes);
 
 // Root Endpoint
 app.get("/", (req, res) => {

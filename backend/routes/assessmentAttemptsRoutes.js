@@ -215,6 +215,14 @@ router.post("/", async (req, res) => {
       ...(screenAnswers.screen3 || {})
     };
 
+    if (screenAnswers.dynamic && typeof screenAnswers.dynamic === 'object') {
+      Object.values(screenAnswers.dynamic).forEach((screenData) => {
+        if (screenData && typeof screenData === 'object') {
+          Object.assign(allAnswers, screenData);
+        }
+      });
+    }
+
     const optionalData = screenAnswers.optional || {};
     const optionalProfile = {
       gender: String(optionalData.gender || "").trim(),
@@ -223,6 +231,40 @@ router.post("/", async (req, res) => {
 
     const questionIds = Object.keys(allAnswers);
     const questions = await Question.find({ _id: { $in: questionIds } }).populate("domain_id");
+
+    // Preload options once to avoid N+1 queries while computing max points.
+    const optionSetIds = [
+      ...new Set(
+        questions
+          .map((q) => (q.option_set_id ? q.option_set_id.toString() : null))
+          .filter(Boolean)
+      )
+    ];
+
+    const optionsForScoring = await Option.find({
+      $or: [
+        { question_id: { $in: questionIds } },
+        { question_id: null, option_set_id: { $in: optionSetIds } }
+      ]
+    })
+      .select("question_id option_set_id points")
+      .lean();
+
+    const questionMaxMap = new Map();
+    const optionSetMaxMap = new Map();
+
+    optionsForScoring.forEach((opt) => {
+      const points = Number(opt.points || 0);
+      if (opt.question_id) {
+        const key = opt.question_id.toString();
+        const prev = questionMaxMap.get(key) || 0;
+        if (points > prev) questionMaxMap.set(key, points);
+      } else if (opt.option_set_id) {
+        const key = opt.option_set_id.toString();
+        const prev = optionSetMaxMap.get(key) || 0;
+        if (points > prev) optionSetMaxMap.set(key, points);
+      }
+    });
 
     // Group answers by domain
     const domainData = {};
@@ -257,10 +299,9 @@ router.post("/", async (req, res) => {
 
       domainData[domainId].total_points += (answer.points || 0);
 
-      const options = await Option.find({
-        $or: [{ option_set_id: q.option_set_id }, { question_id: q._id }]
-      });
-      const maxQPoints = Math.max(...options.map(o => o.points || 0), 0);
+      const qid = q._id.toString();
+      const setId = q.option_set_id ? q.option_set_id.toString() : null;
+      const maxQPoints = questionMaxMap.get(qid) || (setId ? optionSetMaxMap.get(setId) || 0 : 0);
       domainData[domainId].max_points += maxQPoints;
     }
 

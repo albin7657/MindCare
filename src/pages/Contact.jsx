@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { FaEnvelope, FaPhone, FaBuilding } from 'react-icons/fa';
 import { motion } from 'framer-motion';
 import contactImage from '../assets/home_images/floral5.jpg';
@@ -9,6 +10,53 @@ const fadeInUp = {
 };
 
 function Contact() {
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    subject: '',
+    message: ''
+  });
+  const [submitting, setSubmitting] = useState(false);
+  const [formStatus, setFormStatus] = useState({ type: '', message: '' });
+
+  const handleChange = (e) => {
+    const { id, value } = e.target;
+    setFormData((prev) => ({ ...prev, [id]: value }));
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setSubmitting(true);
+    setFormStatus({ type: '', message: '' });
+
+    try {
+      const res = await fetch('http://localhost:5000/api/contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData)
+      });
+
+      const raw = await res.text();
+      let data = {};
+      try {
+        data = raw ? JSON.parse(raw) : {};
+      } catch {
+        data = { message: raw || 'Unexpected server response.' };
+      }
+
+      if (!res.ok) {
+        throw new Error(data.message || 'Failed to send message');
+      }
+
+      setFormStatus({ type: 'success', message: 'Message sent successfully. We will get back to you soon.' });
+      setFormData({ name: '', email: '', subject: '', message: '' });
+    } catch (err) {
+      setFormStatus({ type: 'error', message: err.message || 'Failed to send message. Please try again.' });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   return (
     <div className="contact-container">
       {/* Messaging Section on Top */}
@@ -18,7 +66,13 @@ function Contact() {
           <p className="section-subtitle">
             Have questions or need support? We're here to help you on your mental wellness journey.
           </p>
-          <form className="contact-form">
+          <form className="contact-form" onSubmit={handleSubmit}>
+            {formStatus.message && (
+              <div className={`contact-status ${formStatus.type === 'success' ? 'contact-status-success' : 'contact-status-error'}`}>
+                {formStatus.message}
+              </div>
+            )}
+
             <div className="form-row">
               <div className="form-group">
                 <label htmlFor="name">Full Name</label>
@@ -27,6 +81,8 @@ function Contact() {
                   id="name" 
                   className="form-input" 
                   placeholder="Your name"
+                  value={formData.name}
+                  onChange={handleChange}
                   required 
                 />
               </div>
@@ -38,6 +94,8 @@ function Contact() {
                   id="email" 
                   className="form-input" 
                   placeholder="your.email@example.com"
+                  value={formData.email}
+                  onChange={handleChange}
                   required 
                 />
               </div>
@@ -50,6 +108,8 @@ function Contact() {
                 id="subject" 
                 className="form-input" 
                 placeholder="How can we help?"
+                  value={formData.subject}
+                  onChange={handleChange}
                 required 
               />
             </div>
@@ -61,12 +121,14 @@ function Contact() {
                 className="form-input form-textarea" 
                 rows="6"
                 placeholder="Tell us more about your inquiry..."
+                  value={formData.message}
+                  onChange={handleChange}
                 required
               ></textarea>
             </div>
 
-            <motion.button type="submit" className="btn btn-primary btn-large" whileHover={{ y: -2, scale: 1.02 }} transition={{ duration: 0.2 }}>
-              Send Message
+            <motion.button type="submit" className="btn btn-primary btn-large" whileHover={{ y: -2, scale: 1.02 }} transition={{ duration: 0.2 }} disabled={submitting}>
+              {submitting ? 'Sending...' : 'Send Message'}
             </motion.button>
           </form>
         </motion.div>

@@ -16,6 +16,7 @@ import AnxietyTest from './pages/AnxietyTest';
 import DepressionTest from './pages/DepressionTest';
 import BurnoutTest from './pages/BurnoutTest';
 import SleepTest from './pages/SleepTest';
+import GenericSpecializedTest from './pages/GenericSpecializedTest';
 
 import { buildAssessmentEntry } from './utils/assessment';
 import {
@@ -187,19 +188,40 @@ function App() {
 
     setQuizResults(processedResults);
 
+    // Navigate immediately so users see results without waiting for history sync.
+    setCurrentPage('results');
+
     if (authenticatedUser?.token) {
-      // refresh server-side history so dashboard shows the new record
-      await fetchHistoryFromServer(authenticatedUser.token);
+      // Refresh history in the background for dashboard freshness.
+      fetchHistoryFromServer(authenticatedUser.token).catch((err) => {
+        console.error('Background history refresh failed', err);
+      });
     } else if (authenticatedUser?.id) {
       const entry = buildAssessmentEntry(answers);
       const updatedHistory = addUserHistoryEntry(authenticatedUser.id, entry);
       setUserHistory(updatedHistory);
     }
-
-    setCurrentPage('results');
   };
 
   const renderPage = () => {
+    if (currentPage.startsWith('test-domain-')) {
+      if (!currentUser && !authenticatedUser) {
+        setPendingPage(currentPage);
+        setCurrentPage('login');
+        return null;
+      }
+
+      const encodedDomain = currentPage.replace('test-domain-', '');
+      const domainName = decodeURIComponent(encodedDomain);
+      return (
+        <GenericSpecializedTest
+          domainName={domainName}
+          onComplete={handleAssessmentComplete}
+          onBack={() => setCurrentPage('test-selection')}
+        />
+      );
+    }
+
     switch (currentPage) {
       case 'home':
         return <Home onStartTest={() => setCurrentPage('test-selection')} onNavigate={setCurrentPage} />;
@@ -345,7 +367,8 @@ function App() {
         currentPage !== 'test-anxiety' &&
         currentPage !== 'test-depression' &&
         currentPage !== 'test-burnout' &&
-        currentPage !== 'test-sleep' ? 'with-padding' : ''
+        currentPage !== 'test-sleep' &&
+        !currentPage.startsWith('test-domain-') ? 'with-padding' : ''
         }`}>
         {renderPage()}
       </main>

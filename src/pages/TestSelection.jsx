@@ -16,10 +16,91 @@ const cardTransition = (index) => ({
 
 function TestSelection({ onStartCombinedTest, onStartSpecificTest }) {
   const [showContent, setShowContent] = useState(false);
+  const [dynamicTests, setDynamicTests] = useState([]);
 
   useEffect(() => {
     const timer = setTimeout(() => setShowContent(true), 160);
     return () => clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    const normalize = (name) =>
+      String(name || '')
+        .trim()
+        .toLowerCase()
+        .replace(/&/g, 'and')
+        .replace(/[^a-z0-9]+/g, '_')
+        .replace(/^_+|_+$/g, '');
+
+    const loadDynamicSpecializedDomains = async () => {
+      try {
+        const [typesRes, domainsRes] = await Promise.all([
+          fetch('http://localhost:5000/api/assessment-types'),
+          fetch('http://localhost:5000/api/domains')
+        ]);
+
+        if (!domainsRes.ok) {
+          setDynamicTests([]);
+          return;
+        }
+
+        let specializedTypeId = null;
+        if (typesRes.ok) {
+          const types = await typesRes.json();
+          const specialized = types.find((t) => t.isSpecialized);
+          specializedTypeId = specialized?._id ? String(specialized._id) : null;
+        }
+
+        const domains = await domainsRes.json();
+        const defaultDomainSet = new Set(['stress', 'anxiety', 'depression', 'burnout', 'sleep']);
+
+        const candidateExtras = domains.filter((d) => {
+          const name = d?.domain_name || '';
+          const normalized = normalize(name);
+          return Boolean(normalized) && !defaultDomainSet.has(normalized);
+        });
+
+        let specializedDomainNames = candidateExtras.map((d) => d.domain_name);
+
+        // Determine specialization by checking if the domain has questions for specialized assessment type.
+        if (specializedTypeId) {
+          const checks = await Promise.all(
+            candidateExtras.map(async (d) => {
+              try {
+                const encodedName = encodeURIComponent(d.domain_name);
+                const qRes = await fetch(`http://localhost:5000/api/domains/questions-by-domains/${encodedName}?assessment_type_id=${specializedTypeId}`);
+                if (!qRes.ok) return false;
+                const qData = await qRes.json();
+                return Array.isArray(qData) && qData.length > 0;
+              } catch {
+                return false;
+              }
+            })
+          );
+
+          specializedDomainNames = candidateExtras
+            .filter((_, index) => checks[index])
+            .map((d) => d.domain_name);
+        }
+
+        const extras = domains
+          .filter((d) => specializedDomainNames.includes(d.domain_name))
+          .map((d) => ({
+            id: `domain-${encodeURIComponent(d.domain_name)}`,
+            name: `${d.domain_name} Assessment`,
+            description: d.description || `Focused assessment for ${d.domain_name.toLowerCase()} concerns.`,
+            duration: '5-7 min',
+            icon: <FaBrain />
+          }));
+
+        setDynamicTests(extras);
+      } catch (err) {
+        console.error('Failed to load dynamic specialized domains', err);
+        setDynamicTests([]);
+      }
+    };
+
+    loadDynamicSpecializedDomains();
   }, []);
 
   const specificTests = [
@@ -100,7 +181,7 @@ function TestSelection({ onStartCombinedTest, onStartSpecificTest }) {
         >
           <h3 className="individual-tests-title">Choose a Specific Test</h3>
           <div className="individual-tests-grid">
-            {specificTests.map((test, index) => (
+            {[...specificTests, ...dynamicTests].map((test, index) => (
               <motion.div
                 key={test.id}
                 className="test-card"

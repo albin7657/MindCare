@@ -46,6 +46,25 @@
   gap: 25px;
 }
 
+.contact-status {
+  padding: 12px 14px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.contact-status-success {
+  background: #e9f8ef;
+  border: 1px solid #8ad4a3;
+  color: #135e2e;
+}
+
+.contact-status-error {
+  background: #ffecec;
+  border: 1px solid #e4a2a2;
+  color: #8a1f1f;
+}
+
 .form-row {
   display: grid;
   grid-template-columns: 1fr 1fr;

@@ -1,35 +1,46 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import QuestionCard from './QuestionCard';
 import './Screen.css';
 
-function Screen3({ answers, optionalData, onUpdate, onOptionalUpdate, showValidation, showOptionalSection = true }) {
+function DynamicDomainScreen({
+  domainNames = [],
+  answers,
+  onUpdate,
+  showValidation,
+  optionalData,
+  onOptionalUpdate,
+  showOptionalSection = false
+}) {
   const [questions, setQuestions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  const title = useMemo(() => `${domainNames.join(' & ')} Assessment`, [domainNames]);
 
   useEffect(() => {
     const fetchQuestions = async () => {
       try {
         setLoading(true);
 
-        // filter to general assessment type for combined screens
         let generalTypeId = null;
         try {
           const tRes = await fetch('http://localhost:5000/api/assessment-types');
           if (tRes.ok) {
             const types = await tRes.json();
-            const general = types.find(t => !t.isSpecialized) || types[0];
+            const general = types.find((t) => !t.isSpecialized) || types[0];
             generalTypeId = general?._id;
           }
         } catch (e) {
           console.warn('Could not load assessment types, continuing without filter', e);
         }
 
-        const url = `http://localhost:5000/api/domains/questions-by-domains/Sleep${generalTypeId ? `?assessment_type_id=${generalTypeId}` : ''}`;
+        const encoded = encodeURIComponent(domainNames.join(','));
+        const url = `http://localhost:5000/api/domains/questions-by-domains/${encoded}${generalTypeId ? `?assessment_type_id=${generalTypeId}` : ''}`;
         const response = await fetch(url);
         if (!response.ok) {
           throw new Error('Failed to fetch questions');
         }
+
         const data = await response.json();
         setQuestions(data);
         setError(null);
@@ -42,13 +53,13 @@ function Screen3({ answers, optionalData, onUpdate, onOptionalUpdate, showValida
     };
 
     fetchQuestions();
-  }, []);
+  }, [domainNames]);
 
   if (loading) {
     return (
       <div className="screen-container">
         <div className="screen-header">
-          <h2 className="screen-title">Sleep Quality Assessment</h2>
+          <h2 className="screen-title">{title}</h2>
         </div>
         <div className="loading-message">Loading questions...</div>
       </div>
@@ -59,7 +70,7 @@ function Screen3({ answers, optionalData, onUpdate, onOptionalUpdate, showValida
     return (
       <div className="screen-container">
         <div className="screen-header">
-          <h2 className="screen-title">Sleep Quality Assessment</h2>
+          <h2 className="screen-title">{title}</h2>
         </div>
         <div className="error-message">{error}</div>
       </div>
@@ -69,18 +80,17 @@ function Screen3({ answers, optionalData, onUpdate, onOptionalUpdate, showValida
   return (
     <div className="screen-container">
       <div className="screen-header">
-        <h2 className="screen-title">Sleep Quality Assessment</h2>
+        <h2 className="screen-title">{title}</h2>
         <p className="screen-description">
-          Please answer the following {questions.length} questions about your sleep patterns.
+          Please answer the following {questions.length} questions.
         </p>
       </div>
 
       <div className="questions-container">
         {questions.map((question, index) => {
-          // Transform options from database format to QuestionCard format
           const scale = question.options
             .sort((a, b) => a.points - b.points)
-            .map(option => ({
+            .map((option) => ({
               value: option.points,
               label: option.option_text
             }));
@@ -88,12 +98,12 @@ function Screen3({ answers, optionalData, onUpdate, onOptionalUpdate, showValida
           return (
             <QuestionCard
               key={question._id}
-              questionNumber={index + 17}
+              questionNumber={index + 1}
               question={question.question_text}
               scale={scale}
               selectedValue={answers[question._id]?.points}
               onSelect={(value) => {
-                const selectedOption = question.options.find(opt => opt.points === value);
+                const selectedOption = question.options.find((opt) => opt.points === value);
                 onUpdate({
                   [question._id]: {
                     points: value,
@@ -170,4 +180,4 @@ function Screen3({ answers, optionalData, onUpdate, onOptionalUpdate, showValida
   );
 }
 
-export default Screen3;
+export default DynamicDomainScreen;
