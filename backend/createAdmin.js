@@ -12,7 +12,7 @@ const createAdmin = async () => {
 
     const hashed = await bcrypt.hash("123", 10);
 
-    // 🔥 DO NOT SET admin_id manually
+
     await Admin.create({
       username: "team10admin",
       email: "admin@mindcare.com",
