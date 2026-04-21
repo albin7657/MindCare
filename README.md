@@ -16,7 +16,7 @@ MindCare is a production-ready web application designed to monitor and support s
 - **MongoDB & Mongoose**: Flexible document storage with schema validation.
 - **JWT Authentication**: Secure stateless authentication.
 - **Bcrypt**: Industrial-strength password hashing.
-- **Security**: Helmet, Rate Limiter, and input validation.
+- **Security**: Tokenization
 
 ### Frontend
 - **ReactJS & Vite**: Blazing fast development and build.
